@@ -8,11 +8,17 @@
     <h3> Hello World! </h3>
     <input type="range" min="0" max="20" value="10"
     class="slider" id="temperatureSlider">
+    <input type="range" min="0" max="10" value="5"
+    class="slider" id="topPSlider">
     <span id="temperatureSliderValue"> 10 </span>
+    <span id="topPSliderValue"> 10 </span>
     <a href="/" class="logo-link">
-        <img src = "https://i.imgur.com/U1035dV.png" class="logo" >
+        <img src = "https://i.imgur.com/U1035dV.png" class="logo">
     </a>
-    <script src = "script.js"> </script>
+    <label for="usertext"> Enter your text: </label>
+    <input type="text" id="usertext">
+    <button type="button" id="wordpredict"> Predict next words </button>
+    <script src ="../backend/slider.js"></script>
+    <script src ="../backend/script.js"></script>
 </body>
-
 </html>
