@@ -9,6 +9,5 @@ function updateSliderValue(event) {
 document.querySelectorAll('input[type="range"]').forEach(slider => {
     slider.addEventListener("input", updateSliderValue);
 
-    // Set initial value on page load
     updateSliderValue({ target: slider });
 });
