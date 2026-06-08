@@ -26,16 +26,16 @@ app.post("/predict", async (req, res) => {
     // OpenAI API call to create a list of next likely words
     const response =
         await client.chat.completions.create({
-            model: "gpt-4.1",
+            model: "gpt-5.4",
             messages: [
                 {
                     role: "user",
                     content: userText
                 }
             ],
-            max_tokens: 1,
-            logprobs: true,
-            top_logprobs: 10
+    max_completion_tokens: 6,
+    logprobs: true,
+    top_logprobs: 5
         });
 
     // Sends data to browser in JSON format

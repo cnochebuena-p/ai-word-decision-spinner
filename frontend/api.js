@@ -1,37 +1,82 @@
-// The button attached to user input
-const button = document.querySelector("button");
+const predictButton = document.querySelector("#wordpredict");
+const spinButton = document.querySelector("#spinButton");
+const wheel = document.querySelector("#wheel");
 
-// Sends text to server; awaits response
+let currentProbabilities = [];
+let currentRotation = 0;
+
 async function generateNextWords(textResponse) {
-
-    // Sends response to Express backend route
     const response = await fetch("/predict", {
         method: "POST",
-        // Tells server it is sending JSON data
         headers: {
             "Content-Type": "application/json"
         },
-        // Turns text into JSON string
         body: JSON.stringify({
             text: textResponse
         })
     });
 
-    // Waits for response from server to convert into JSON.
     const data = await response.json();
 
-    // Updates span in HTML to the AI output
+    const probabilities = data.result.map(item => ({
+        token: item.token.trim() || "(space)",
+        probability: Math.exp(item.logprob)
+    }));
+
+    const totalProbability = probabilities.reduce(
+        (sum, item) => sum + item.probability,
+        0
+    );
+
+    probabilities.push({
+        token: "Other",
+        probability: Math.max(0, 1 - totalProbability)
+    });
+
+    currentProbabilities = probabilities;
+
     document.getElementById("buttonValue").textContent =
-        data.result;
+        probabilities
+            .map(item =>
+                `${item.token} (${(item.probability * 100).toFixed(1)}%)`
+            )
+            .join(", ");
+
+    drawWheel(probabilities);
 }
 
-// When button is clicked...
-button.addEventListener("click", () => {
+function drawWheel(probabilities) {
+    const colors = ["red", "blue", "green", "yellow", "purple", "orange"];
 
-    // Retrieve user's text
-    const userText =
-        document.getElementById("usertext").value;
+    let currentPercent = 0;
 
-    // and call function that gives AI output
+    const gradientParts = probabilities.map((item, index) => {
+        const start = currentPercent;
+        const end = currentPercent + item.probability * 100;
+
+        currentPercent = end;
+
+        return `${colors[index % colors.length]} ${start}% ${end}%`;
+    });
+
+    wheel.style.background =
+        `conic-gradient(${gradientParts.join(", ")})`;
+}
+
+function spinWheel() {
+    if (currentProbabilities.length === 0) {
+        alert("Predict words first!");
+        return;
+    }
+
+    currentRotation += 360 * 5 + Math.floor(Math.random() * 360);
+
+    wheel.style.transform = `rotate(${currentRotation}deg)`;
+}
+
+predictButton.addEventListener("click", () => {
+    const userText = document.getElementById("usertext").value;
     generateNextWords(userText);
 });
+
+spinButton.addEventListener("click", spinWheel);
