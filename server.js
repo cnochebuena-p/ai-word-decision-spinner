@@ -1,47 +1,150 @@
 // Imports Express framework to handle /predict route
 const express = require("express");
+
 // Imports OpenAI SDK
 const OpenAI = require("openai");
+
 // Loads .env file
 require("dotenv").config();
-// Creates Expression app instance
+
+// Creates Express app instance
 const app = express();
+
 // Allows server to read JSON requests
 app.use(express.json());
-// Allows for delivery of files to browser w/o modification
+
+// Allows delivery of files to browser without modification
 app.use(express.static("frontend"));
 
-// OpenAI client creation w/ key from env file
+// OpenAI client creation with key from env file
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-// Handles post requests returning OpenAI results
+// Handles POST requests returning OpenAI results
 // by creating API endpoint, also using async to wait for OpenAI response
 app.post("/predict", async (req, res) => {
 
     // Reads JSON from browser
     const userText = req.body.text;
 
-    // OpenAI API call to create a list of next likely words
+    // Reads slider values from browser
+    const temperature = req.body.temperature;
+    const topK = req.body.topK;
+
+    // Prints slider values to terminal
+
+    console.log(
+        "Temperature:",
+        temperature,
+        "Top-K:",
+        topK
+    );
+
+    // OpenAI API call to create a list of likely next words
     const response =
         await client.chat.completions.create({
             model: "gpt-5.4",
+
             messages: [
+                {
+                    role: "system",
+                    content:
+                        `Given the user's text, return exactly ${topK} likely next whole words with estimated probabilities. The probabilities must add up to 100. Return only valid JSON like this: [{"word":"example","probability":40}]`
+                },
                 {
                     role: "user",
                     content: userText
                 }
             ],
-    max_completion_tokens: 6,
-    logprobs: true,
-    top_logprobs: 5
+
+            temperature: temperature,
+
+            max_completion_tokens: 300
         });
+
+    // Converts model JSON output into JavaScript objects
+    const words = JSON.parse(
+        response.choices[0].message.content
+    );
+
+    console.log("Number of words returned:", words.length);
+
+    // Prints the words and probabilities to the terminal
+    console.log(words);
 
     // Sends data to browser in JSON format
     res.json({
-        // probability of responses
-        result: response.choices[0].logprobs.content[0].top_logprobs
+        result: words
+    });
+});
+
+// Handles spin button requests
+app.post("/spin", (req, res) => {
+
+    // Reads probabilities from request body
+    const probabilities = req.body.probabilities;
+
+    // Checks that probabilities were sent
+    if (!probabilities || probabilities.length === 0) {
+        return res.json({
+            success: false,
+            message: "No probabilities were provided"
+        });
+    }
+
+    // Simulates a spinner using a random number from 0 to 100
+    const randomNumber = Math.random() * 100;
+
+    let cumulative = 0;
+    let winningWord =
+        probabilities[probabilities.length - 1].word;
+
+    for (const item of probabilities) {
+        cumulative += item.probability;
+
+        if (randomNumber <= cumulative) {
+            winningWord = item.word;
+            break;
+        }
+    }
+
+    // Prints result in terminal
+    console.log("Spin endpoint called");
+    console.log("Probabilities:", probabilities);
+    console.log("Random number:", randomNumber);
+    console.log("Winning word:", winningWord);
+
+    // Sends result back
+    res.json({
+        success: true,
+        winningWord: winningWord,
+        randomNumber: randomNumber
+    });
+});
+
+
+/*
+
+Can run this on terminal to test spin endpoint:
+
+curl -X POST "http://localhost:3000/spin" \
+  -H "Content-Type: application/json" \
+  -d '{"probabilities":[{"word":"dog","probability":50},{"word":"cat","probability":30},
+  {"word":"bird","probability":20}]}'
+
+*/
+
+// Handles continue button requests
+app.post("/continue", (req, res) => {
+
+    // Prints message to terminal
+    console.log("Continue button pressed");
+
+    // Sends success response to browser
+    res.json({
+        success: true,
+        name: "carlos"
     });
 });
 
