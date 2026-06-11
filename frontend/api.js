@@ -98,42 +98,25 @@ function drawWheel(probabilities) {
 
 function createTemperatureProbabilities(words, temperature) {
 
-    const count = words.length;
+    const r =
+        Math.pow(2, -1 + temperature / 2);
 
-    // Temperature 0 gives steep probabilities: 50%, 25%, 12.5%, etc.
-    const coldWeights = words.map((_, index) => {
-        return Math.pow(0.5, index + 1);
-    });
-
-    // Temperature 2 gives equal probabilities
-    const equalWeights = words.map(() => {
-        return 1;
-    });
-
-    // Convert temperature from 0–2 into blend amount from 0–1
-    const blendAmount = temperature / 2;
-
-    // Blend cold weights and equal weights
-    const blendedWeights = words.map((word, index) => {
-        return (
-            coldWeights[index] * (1 - blendAmount) +
-            equalWeights[index] * blendAmount
+    const weights =
+        words.map((_, index) =>
+            Math.pow(r, index)
         );
-    });
 
-    // Normalize weights so they add up to 100
-    const totalWeight = blendedWeights.reduce(
-        (sum, weight) => sum + weight,
-        0
-    );
+    const totalWeight =
+        weights.reduce(
+            (sum, weight) => sum + weight,
+            0
+        );
 
-    return words.map((item, index) => {
-        return {
-            word: item.word,
-            probability:
-                (blendedWeights[index] / totalWeight) * 100
-        };
-    });
+    return words.map((item, index) => ({
+        word: item.word,
+        probability:
+            weights[index] / totalWeight * 100
+    }));
 }
 
 // Creates color legend beneath wheel
