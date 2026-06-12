@@ -147,7 +147,13 @@ function updateLegend(probabilities, colors) {
             document.createElement("span");
 
         label.textContent =
-            `${item.word} (${item.probability}%)`;
+        `${item.word} (${item.probability.toLocaleString(
+            undefined,
+            {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }
+        )}%)`;
 
         row.appendChild(colorBox);
         row.appendChild(label);
@@ -265,3 +271,22 @@ predictButton.addEventListener("click", () => {
 
 // When Spin button is clicked...
 spinButton.addEventListener("click", spinWheel);
+
+function updatePredictionFromCurrentText() {
+    const userText =
+        document.getElementById("usertext").value;
+
+    if (userText.trim() === "") {
+        return;
+    }
+
+    generateNextWords(userText);
+}
+
+document
+    .getElementById("temperatureSlider")
+    .addEventListener("change", updatePredictionFromCurrentText);
+
+document
+    .getElementById("topKSlider")
+    .addEventListener("change", updatePredictionFromCurrentText);
