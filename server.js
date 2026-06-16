@@ -123,6 +123,108 @@ app.post("/spin", (req, res) => {
     });
 });
 
+function createTemperatureProbabilities(words, temperature) {
+    const r = Math.pow(2, -1 + temperature / 2);
+
+    const weights = words.map((_, index) => {
+        return Math.pow(r, index);
+    });
+
+    const totalWeight = weights.reduce(
+        (sum, weight) => sum + weight,
+        0
+    );
+
+    return words.map((item, index) => ({
+        word: item.word,
+        probability:
+            Number(
+                ((weights[index] / totalWeight) * 100).toFixed(2)
+            )
+    }));
+}
+
+/* example API call for next words:
+curl -X POST "http://localhost:3000/api/next-words" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"The dog ran to the","temperature":1.0,"k":10}'
+*/
+
+app.post("/api/next-words", async (req, res) => {
+    try {
+        const text = req.body.text;
+        const temperature = Number(req.body.temperature);
+        const k = Number(req.body.k);
+
+        if (!text || typeof text !== "string") {
+            return res.status(400).json({
+                success: false,
+                error: "text must be a non-empty string"
+            });
+        }
+
+        if (Number.isNaN(temperature) || temperature < 0 || temperature > 2) {
+            return res.status(400).json({
+                success: false,
+                error: "temperature must be a number from 0 to 2"
+            });
+        }
+
+        if (!Number.isInteger(k) || k < 1 || k > 30) {
+            return res.status(400).json({
+                success: false,
+                error: "k must be an integer from 1 to 30"
+            });
+        }
+
+        const response =
+            await client.chat.completions.create({
+                model: "gpt-5.4",
+
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            `Given the user's text, return exactly ${k} likely next whole words. Return only valid JSON like this: [{"word":"example"}]`
+                    },
+                    {
+                        role: "user",
+                        content: text
+                    }
+                ],
+
+                max_completion_tokens: 300
+            });
+
+        const rawWords = JSON.parse(
+            response.choices[0].message.content
+        );
+
+        const words =
+            createTemperatureProbabilities(
+                rawWords,
+                temperature
+            );
+
+        res.json({
+            success: true,
+            input: text,
+            temperature: temperature,
+            k: k,
+            words: words
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Something went wrong"
+        });
+    }
+});
+
 
 /*
 
