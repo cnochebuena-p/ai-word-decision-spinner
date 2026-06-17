@@ -135,3 +135,12 @@ label[for="usertext"] {
     width: 65%;
     height: 99dvh;
 }
+
+#tokenizedOutput {
+    display: block;
+    width: 300px;
+    height: 100px;
+    margin-top: 10px;
+    padding: 8px;
+    resize: none;
+}
