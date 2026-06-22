@@ -144,3 +144,17 @@ label[for="usertext"] {
     padding: 8px;
     resize: none;
 }
+
+#embeddingCanvas {
+    display: block;
+    margin-top: 20px;
+    border: 2px solid black;
+    background-color: white;
+}
+
+#axisCanvas {
+    display: block;
+    margin-top: 20px;
+    border: 2px solid black;
+    background-color: white;
+}

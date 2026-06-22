@@ -225,6 +225,70 @@ app.post("/api/next-words", async (req, res) => {
     }
 });
 
+app.post("/api/word-embeddings", async (req, res) => {
+    const text = req.body.text;
+
+    const words = text
+        .trim()
+        .split(/\s+/);
+
+    const response = await client.embeddings.create({
+        model: "text-embedding-3-small",
+        input: words
+    });
+
+    const embeddings = response.data.map((item, index) => ({
+        word: words[index],
+        embedding: item.embedding
+    }));
+
+    res.json({
+        input: text,
+        words: embeddings
+    });
+});
+
+app.post("/api/axis-map", async (req, res) => {
+    try {
+        const text = req.body.text;
+
+        const response =
+            await client.chat.completions.create({
+                model: "gpt-5.4",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Given a user's text, choose two meaningful conceptual axes for plotting the important words. Return only valid JSON in this format: {\"xAxis\":\"axis name\",\"yAxis\":\"axis name\",\"points\":[{\"word\":\"example\",\"x\":0.5,\"y\":-0.2}]}. Values must be between -1 and 1."
+                    },
+                    {
+                        role: "user",
+                        content: text
+                    }
+                ],
+                max_completion_tokens: 300
+            });
+
+        const axisMap = JSON.parse(
+            response.choices[0].message.content
+        );
+
+        res.json({
+            success: true,
+            axisMap: axisMap
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Could not create axis map"
+        });
+    }
+});
+
 
 /*
 
