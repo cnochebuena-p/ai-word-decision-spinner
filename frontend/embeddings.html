@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h3>Embedding Visualizer</h3>
+
+    <a href="index.html">
+        <button type="button">Back to spinner</button>
+    </a>
+
+    <label for="embeddingText">Enter text:</label>
+    <textarea id="embeddingText"></textarea>
+
+    <button type="button" id="embeddingButton">
+        Show embedding map
+    </button>
+
+    <button type="button" id="axisMapButton">
+        Show AI axis map
+    </button>
+
+    <canvas id="embeddingCanvas" width="400" height="300"></canvas>
+    <canvas id="axisCanvas" width="400" height="300"></canvas>
+
+    <textarea id="embeddingOutput" readonly></textarea>
+
+    <script src="embeddings.js"></script>
+</body>
+</html>

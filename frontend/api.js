@@ -119,30 +119,7 @@ function createTemperatureProbabilities(words, temperature) {
     }));
 }
 
-async function getEmbeddings() {
 
-    const text =
-        document.getElementById("usertext").value;
-
-    const response = await fetch(
-        "/api/word-embeddings",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-            body: JSON.stringify({
-                text: text
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    document.getElementById("embeddingOutput").value =
-    JSON.stringify(data.words, null, 2);
-}
 
 // Creates color legend beneath wheel
 function updateLegend(probabilities, colors) {
@@ -308,71 +285,6 @@ function updatePredictionFromCurrentText() {
     generateNextWords(userText);
 }
 
-const embeddingButton =
-    document.getElementById("embeddingButton");
-
-const embeddingCanvas =
-    document.getElementById("embeddingCanvas");
-
-embeddingButton.addEventListener("click", async () => {
-    const text =
-        document.getElementById("usertext").value;
-
-    const response = await fetch("/api/word-embeddings", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            text: text
-        })
-    });
-
-    const data = await response.json();
-
-    drawEmbeddingMap(data.words);
-});
-
-function drawEmbeddingMap(words) {
-    const canvas = document.getElementById("embeddingCanvas");
-    const ctx = canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const points = words.map(item => ({
-        word: item.word,
-        x: item.embedding[0],
-        y: item.embedding[1]
-    }));
-
-    const xs = points.map(p => p.x);
-    const ys = points.map(p => p.y);
-
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    function scaleX(x) {
-        return 40 + ((x - minX) / (maxX - minX || 1)) * 320;
-    }
-
-    function scaleY(y) {
-        return 260 - ((y - minY) / (maxY - minY || 1)) * 220;
-    }
-
-    points.forEach(point => {
-        const x = scaleX(point.x);
-        const y = scaleY(point.y);
-
-        ctx.beginPath();
-        ctx.arc(x, y, 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillText(point.word, x + 10, y);
-    });
-}
-
 document
     .getElementById("temperatureSlider")
     .addEventListener("change", updatePredictionFromCurrentText);
@@ -445,3 +357,10 @@ function drawAxisMap(axisMap) {
         ctx.fillText(point.word, x + 10, y);
     });
 }
+
+const embeddingPageButton =
+    document.getElementById("embeddingPageButton");
+
+embeddingPageButton.addEventListener("click", () => {
+    window.location.href = "embeddings.html";
+});
