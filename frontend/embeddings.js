@@ -118,3 +118,133 @@ function drawAxisMap(axisMap) {
         ctx.fillText(point.word, x + 10, y);
     });
 }
+
+function drawConceptGraph(conceptGraph) {
+    const canvas =
+        document.getElementById("conceptCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.font = "14px Arial";
+
+    const left = 50;
+    const right = canvas.width - 30;
+    const top = 30;
+    const bottom = canvas.height - 50;
+
+    const centerY =
+        (top + bottom) / 2;
+
+    // Draw axes
+    ctx.beginPath();
+    ctx.moveTo(left, centerY);
+    ctx.lineTo(right, centerY);
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, bottom);
+    ctx.stroke();
+
+    ctx.fillText(conceptGraph.yAxis, left + 10, top + 10);
+    ctx.fillText("cumulative phrase", right - 130, centerY - 10);
+
+    let cumulative = 0;
+
+    const points =
+        conceptGraph.words.map((item, index) => {
+            cumulative += item.score;
+
+            return {
+                word: item.word,
+                phraseValue: cumulative,
+                xIndex: index
+            };
+        });
+
+    const maxAbs =
+        Math.max(
+            1,
+            ...points.map(point =>
+                Math.abs(point.phraseValue)
+            )
+        );
+
+    function scaleX(index) {
+        if (points.length === 1) {
+            return left + 50;
+        }
+
+        return left +
+            (index / (points.length - 1)) *
+            (right - left);
+    }
+
+    function scaleY(value) {
+        return centerY -
+            (value / maxAbs) *
+            ((bottom - top) / 2);
+    }
+
+    // Draw connecting line
+    ctx.beginPath();
+
+    points.forEach((point, index) => {
+        const x = scaleX(point.xIndex);
+        const y = scaleY(point.phraseValue);
+
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        }
+
+        else {
+            ctx.lineTo(x, y);
+        }
+    });
+
+    ctx.stroke();
+
+    // Draw points
+    points.forEach(point => {
+        const x = scaleX(point.xIndex);
+        const y = scaleY(point.phraseValue);
+
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillText(point.word, x + 8, y - 8);
+    });
+}
+
+const conceptGraphButton =
+    document.getElementById("conceptGraphButton");
+
+conceptGraphButton.addEventListener("click", async () => {
+    const text =
+        document.getElementById("embeddingText").value;
+
+    const response = await fetch("/api/concept-graph", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: text
+        })
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+        alert(data.error);
+        return;
+    }
+
+    drawConceptGraph(data.conceptGraph);
+});

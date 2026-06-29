@@ -172,3 +172,10 @@ label[for="usertext"] {
 .nav-button:hover {
     background: #3d9442;
 }
+
+#conceptCanvas {
+    display: block;
+    margin-top: 20px;
+    border: 2px solid black;
+    background-color: white;
+}

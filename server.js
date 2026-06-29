@@ -314,6 +314,47 @@ app.post("/continue", (req, res) => {
     });
 });
 
+app.post("/api/concept-graph", async (req, res) => {
+    try {
+        const text = req.body.text;
+
+        const response =
+            await client.chat.completions.create({
+                model: "gpt-5.4",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Given the user's text, choose one intuitive conceptual vertical axis, then assign each important word a score from -1 to 1 on that axis. Return only valid JSON like this: {\"yAxis\":\"temperature\",\"words\":[{\"word\":\"sun\",\"score\":0.9},{\"word\":\"ice\",\"score\":-0.9},{\"word\":\"fire\",\"score\":1.0}]}"
+                    },
+                    {
+                        role: "user",
+                        content: text
+                    }
+                ],
+                max_completion_tokens: 300
+            });
+
+        const conceptGraph = JSON.parse(
+            response.choices[0].message.content
+        );
+
+        res.json({
+            success: true,
+            conceptGraph: conceptGraph
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Could not create concept graph"
+        });
+    }
+});
+
 // Start server on port 3000
 app.listen(3000, () => {
     console.log("Server running on port 3000");
