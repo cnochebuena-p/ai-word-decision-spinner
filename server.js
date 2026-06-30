@@ -355,6 +355,68 @@ app.post("/api/concept-graph", async (req, res) => {
     }
 });
 
+app.post("/api/custom-axis-map", async (req, res) => {
+    try {
+        const text = req.body.text;
+        const xAxis = req.body.xAxis;
+        const yAxis = req.body.yAxis;
+
+        const words = text.trim().split(/\s+/);
+
+        const inputs = [
+            ...words,
+            xAxis,
+            yAxis
+        ];
+
+        const response = await client.embeddings.create({
+            model: "text-embedding-3-small",
+            input: inputs
+        });
+
+        const wordEmbeddings = response.data
+            .slice(0, words.length);
+
+        const xAxisEmbedding =
+            response.data[words.length].embedding;
+
+        const yAxisEmbedding =
+            response.data[words.length + 1].embedding;
+
+        const points = wordEmbeddings.map((item, index) => ({
+            word: words[index],
+            x: dotProduct(item.embedding, xAxisEmbedding),
+            y: dotProduct(item.embedding, yAxisEmbedding)
+        }));
+
+        res.json({
+            success: true,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            points: points
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Could not create custom axis map"
+        });
+    }
+});
+
+function dotProduct(a, b) {
+    let sum = 0;
+
+    for (let i = 0; i < a.length; i++) {
+        sum += a[i] * b[i];
+    }
+
+    return sum;
+}
+
 // Start server on port 3000
 app.listen(3000, () => {
     console.log("Server running on port 3000");
