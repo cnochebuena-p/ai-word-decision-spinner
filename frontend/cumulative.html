@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h3>Cumulative Concept Graph</h3>
+
+    <a href="embeddings.html">
+        <button type="button">Back to embeddings</button>
+    </a>
+
+    <label for="cumulativeText">Enter text:</label>
+    <textarea id="cumulativeText"></textarea>
+
+    <button type="button" id="conceptGraphButton">
+        Show cumulative concept graph
+    </button>
+
+    <button type="button" id="toggleConceptGraphButton">
+        Switch to embedding cumulative graph
+    </button>
+
+    <div id="conceptTooltip"></div>
+
+    <canvas id="conceptCanvas" width="500" height="300"></canvas>
+
+    <script src="cumulative.js"></script>
+</body>
+</html>

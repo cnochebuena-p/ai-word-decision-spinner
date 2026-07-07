@@ -14,24 +14,31 @@
     <label for="embeddingText">Enter text:</label>
     <textarea id="embeddingText"></textarea>
 
-    <button type="button" id="embeddingButton">
-        Show embedding map
-    </button>
-
     <button type="button" id="axisMapButton">
         Show AI axis map
     </button>
 
-    <canvas id="embeddingCanvas" width="400" height="300"></canvas>
     <canvas id="axisCanvas" width="400" height="300"></canvas>
 
-    <textarea id="embeddingOutput" readonly></textarea>
+    <a href="cumulative.html">
+        <button type="button">
+            Cumulative concept graph
+        </button>
+    </a>
 
-    <button type="button" id="conceptGraphButton">
-        Show cumulative concept graph
-    </button>
+    <label for="similarityMetric">
+        Similarity metric:
+    </label>
 
-    <canvas id="conceptCanvas" width="500" height="300"></canvas>
+    <select id="similarityMetric">
+        <option value="cosine" selected>
+            Cosine similarity
+        </option>
+
+        <option value="dot">
+            Dot product
+        </option>
+    </select>
 
     <input id="xAxisInput" placeholder="x-axis concept, e.g. royalty">
     <input id="yAxisInput" placeholder="y-axis concept, e.g. gender">

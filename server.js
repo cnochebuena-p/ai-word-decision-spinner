@@ -123,6 +123,16 @@ app.post("/spin", (req, res) => {
     });
 });
 
+function dotProduct(a, b) {
+    let sum = 0;
+
+    for (let i = 0; i < a.length; i++) {
+        sum += a[i] * b[i];
+    }
+
+    return sum;
+}
+
 function createTemperatureProbabilities(words, temperature) {
     const r = Math.pow(2, -1 + temperature / 2);
 
@@ -223,29 +233,6 @@ app.post("/api/next-words", async (req, res) => {
             error: "Something went wrong"
         });
     }
-});
-
-app.post("/api/word-embeddings", async (req, res) => {
-    const text = req.body.text;
-
-    const words = text
-        .trim()
-        .split(/\s+/);
-
-    const response = await client.embeddings.create({
-        model: "text-embedding-3-small",
-        input: words
-    });
-
-    const embeddings = response.data.map((item, index) => ({
-        word: words[index],
-        embedding: item.embedding
-    }));
-
-    res.json({
-        input: text,
-        words: embeddings
-    });
 });
 
 app.post("/api/axis-map", async (req, res) => {
@@ -355,7 +342,26 @@ app.post("/api/concept-graph", async (req, res) => {
     }
 });
 
+function cosineSimilarity(a, b) {
+
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+
+    return dot / (
+        Math.sqrt(normA) *
+        Math.sqrt(normB)
+    );
+}
+
 app.post("/api/custom-axis-map", async (req, res) => {
+    const metric = req.body.metric || "cosine";
     try {
         const text = req.body.text;
         const xAxis = req.body.xAxis;
@@ -416,6 +422,90 @@ function dotProduct(a, b) {
 
     return sum;
 }
+
+app.post("/api/embedding-concept-graph", async (req, res) => {
+    try {
+        const text = req.body.text;
+
+        const axisResponse =
+            await client.chat.completions.create({
+                model: "gpt-5.4",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Given the user's text, choose one intuitive concept axis for comparing the important words. Return only valid JSON like this: {\"axis\":\"temperature\"}"
+                    },
+                    {
+                        role: "user",
+                        content: text
+                    }
+                ],
+                max_completion_tokens: 100
+            });
+
+        const axisData = JSON.parse(
+            axisResponse.choices[0].message.content
+        );
+
+        const axis = axisData.axis;
+
+        const words = text.trim().split(/\s+/);
+
+        const inputs = [
+            ...words,
+            axis
+        ];
+
+        const embeddingResponse =
+            await client.embeddings.create({
+                model: "text-embedding-3-small",
+                input: inputs
+            });
+
+        const wordEmbeddings =
+            embeddingResponse.data.slice(0, words.length);
+
+        const axisEmbedding =
+            embeddingResponse.data[words.length].embedding;
+
+        const rawScores =
+            wordEmbeddings.map(item =>
+                cosineSimilarity(
+                    item.embedding,
+                    axisEmbedding
+                )
+            );
+
+        const averageScore =
+            rawScores.reduce(
+                (sum, score) => sum + score,
+                0
+            ) / rawScores.length;
+
+        const graphWords =
+            rawScores.map((score, index) => ({
+                word: words[index],
+                rawScore: score,
+                score: score - averageScore
+            }));
+
+        res.json({
+            success: true,
+            axis: axis,
+            words: graphWords
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Could not create embedding concept graph"
+        });
+    }
+});
 
 // Start server on port 3000
 app.listen(3000, () => {

@@ -1,24 +1,4 @@
-const embeddingButton = document.getElementById("embeddingButton");
 const axisMapButton = document.getElementById("axisMapButton");
-
-embeddingButton.addEventListener("click", async () => {
-    const text = document.getElementById("embeddingText").value;
-
-    const response = await fetch("/api/word-embeddings", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text })
-    });
-
-    const data = await response.json();
-
-    document.getElementById("embeddingOutput").value =
-        JSON.stringify(data.words, null, 2);
-
-    drawEmbeddingMap(data.words);
-});
 
 axisMapButton.addEventListener("click", async () => {
     const text = document.getElementById("embeddingText").value;
@@ -40,46 +20,6 @@ axisMapButton.addEventListener("click", async () => {
 
     drawAxisMap(data.axisMap);
 });
-
-function drawEmbeddingMap(words) {
-    const canvas = document.getElementById("embeddingCanvas");
-    const ctx = canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const points = words.map(item => ({
-        word: item.word,
-        x: item.embedding[0],
-        y: item.embedding[1]
-    }));
-
-    const xs = points.map(p => p.x);
-    const ys = points.map(p => p.y);
-
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    function scaleX(x) {
-        return 40 + ((x - minX) / (maxX - minX || 1)) * 320;
-    }
-
-    function scaleY(y) {
-        return 260 - ((y - minY) / (maxY - minY || 1)) * 220;
-    }
-
-    points.forEach(point => {
-        const x = scaleX(point.x);
-        const y = scaleY(point.y);
-
-        ctx.beginPath();
-        ctx.arc(x, y, 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillText(point.word, x + 10, y);
-    });
-}
 
 function drawAxisMap(axisMap) {
     const canvas = document.getElementById("axisCanvas");
@@ -119,109 +59,6 @@ function drawAxisMap(axisMap) {
     });
 }
 
-function drawConceptGraph(conceptGraph) {
-    const canvas =
-        document.getElementById("conceptCanvas");
-
-    const ctx =
-        canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "black";
-    ctx.fillStyle = "black";
-    ctx.font = "14px Arial";
-
-    const left = 50;
-    const right = canvas.width - 30;
-    const top = 30;
-    const bottom = canvas.height - 50;
-
-    const centerY =
-        (top + bottom) / 2;
-
-    // Draw axes
-    ctx.beginPath();
-    ctx.moveTo(left, centerY);
-    ctx.lineTo(right, centerY);
-    ctx.moveTo(left, top);
-    ctx.lineTo(left, bottom);
-    ctx.stroke();
-
-    ctx.fillText(conceptGraph.yAxis, left + 10, top + 10);
-    ctx.fillText("cumulative phrase", right - 130, centerY - 10);
-
-    let cumulative = 0;
-
-    const points =
-        conceptGraph.words.map((item, index) => {
-            cumulative += item.score;
-
-            return {
-                word: item.word,
-                phraseValue: cumulative,
-                xIndex: index
-            };
-        });
-
-    const maxAbs =
-        Math.max(
-            1,
-            ...points.map(point =>
-                Math.abs(point.phraseValue)
-            )
-        );
-
-    function scaleX(index) {
-        if (points.length === 1) {
-            return left + 50;
-        }
-
-        return left +
-            (index / (points.length - 1)) *
-            (right - left);
-    }
-
-    function scaleY(value) {
-        return centerY -
-            (value / maxAbs) *
-            ((bottom - top) / 2);
-    }
-
-    // Draw connecting line
-    ctx.beginPath();
-
-    points.forEach((point, index) => {
-        const x = scaleX(point.xIndex);
-        const y = scaleY(point.phraseValue);
-
-        if (index === 0) {
-            ctx.moveTo(x, y);
-        }
-
-        else {
-            ctx.lineTo(x, y);
-        }
-    });
-
-    ctx.stroke();
-
-    // Draw points
-    points.forEach(point => {
-        const x = scaleX(point.xIndex);
-        const y = scaleY(point.phraseValue);
-
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillText(point.word, x + 8, y - 8);
-    });
-}
-
 const customAxisButton =
     document.getElementById("customAxisButton");
 
@@ -235,6 +72,9 @@ customAxisButton.addEventListener("click", async () => {
     const yAxis =
         document.getElementById("yAxisInput").value;
 
+    const metric =
+        document.getElementById("similarityMetric").value;
+
     const response = await fetch("/api/custom-axis-map", {
         method: "POST",
         headers: {
@@ -243,7 +83,8 @@ customAxisButton.addEventListener("click", async () => {
         body: JSON.stringify({
             text: text,
             xAxis: xAxis,
-            yAxis: yAxis
+            yAxis: yAxis,
+            metric: metric
         })
     });
 
@@ -309,14 +150,24 @@ function drawCustomAxisMap(data) {
     });
 }
 
+
+let useEmbeddingConceptGraph = false;
+
 const conceptGraphButton =
     document.getElementById("conceptGraphButton");
+
+const toggleConceptGraphButton =
+    document.getElementById("toggleConceptGraphButton");
 
 conceptGraphButton.addEventListener("click", async () => {
     const text =
         document.getElementById("embeddingText").value;
 
-    const response = await fetch("/api/concept-graph", {
+    const endpoint = useEmbeddingConceptGraph
+        ? "/api/embedding-concept-graph"
+        : "/api/concept-graph";
+
+    const response = await fetch(endpoint, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -333,5 +184,35 @@ conceptGraphButton.addEventListener("click", async () => {
         return;
     }
 
-    drawConceptGraph(data.conceptGraph);
+    if (useEmbeddingConceptGraph) {
+        drawConceptGraph({
+            yAxis: data.axis,
+            words: data.words
+        });
+    }
+
+    else {
+        drawConceptGraph(data.conceptGraph);
+    }
+});
+
+toggleConceptGraphButton.addEventListener("click", () => {
+    useEmbeddingConceptGraph =
+        !useEmbeddingConceptGraph;
+
+    if (useEmbeddingConceptGraph) {
+        toggleConceptGraphButton.textContent =
+            "Switch to ChatGPT cumulative graph";
+
+        conceptGraphButton.textContent =
+            "Show embedding cumulative graph";
+    }
+
+    else {
+        toggleConceptGraphButton.textContent =
+            "Switch to embedding cumulative graph";
+
+        conceptGraphButton.textContent =
+            "Show cumulative concept graph";
+    }
 });
