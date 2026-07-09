@@ -1,3 +1,5 @@
+let draggedPoint = null;
+
 const plotPointsButton =
     document.getElementById("plotPointsButton");
 
@@ -54,6 +56,16 @@ function drawGraph() {
 }
 
 async function checkActualPoints() {
+    const colors = [
+        "red",
+        "blue",
+        "green",
+        "orange",
+        "purple",
+        "brown",
+        "deeppink",
+        "teal"
+    ];
     const words =
         userPoints.map(point => point.word);
 
@@ -81,7 +93,7 @@ async function checkActualPoints() {
 
     let totalDistance = 0;
 
-    data.points.forEach(actualPoint => {
+    data.points.forEach((actualPoint, index) => {
         const userPoint =
             userPoints.find(point =>
                 point.word === actualPoint.word
@@ -91,8 +103,11 @@ async function checkActualPoints() {
             return;
         }
 
-        drawLine(userPoint, actualPoint);
-        drawStar(actualPoint.word, actualPoint.x, actualPoint.y);
+    const color =
+        colors[index % colors.length];
+
+    drawLine(userPoint, actualPoint, color);
+    drawStar(actualPoint.word, actualPoint.x, actualPoint.y, color);
 
         const dx =
             userPoint.x - actualPoint.x;
@@ -178,6 +193,35 @@ function parseCoordinate(text) {
     return { x, y };
 }
 
+function canvasToGraph(canvasX, canvasY) {
+    const margin = 30;
+
+    const graphWidth =
+        canvas.width - 2 * margin;
+
+    const graphHeight =
+        canvas.height - 2 * margin;
+
+    let x =
+        ((canvasX - margin) / graphWidth) * 2 - 1;
+
+    let y =
+        1 - ((canvasY - margin) / graphHeight) * 2;
+
+    x = Math.max(-1, Math.min(1, x));
+    y = Math.max(-1, Math.min(1, y));
+
+    return { x, y };
+}
+
+function redrawUserPoints() {
+    drawAxes();
+
+    userPoints.forEach(point => {
+        drawPoint(point.word, point.x, point.y);
+    });
+}
+
 function graphToCanvas(xValue, yValue) {
     const margin = 30;
 
@@ -204,26 +248,79 @@ function drawPoint(word, xValue, yValue) {
     ctx.fillText(word, point.x + 10, point.y - 10);
 }
 
-function drawLine(userPoint, actualPoint) {
+function drawLine(userPoint, actualPoint, color) {
     const userCanvas =
         graphToCanvas(userPoint.x, userPoint.y);
 
     const actualCanvas =
         graphToCanvas(actualPoint.x, actualPoint.y);
 
+    ctx.save();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+
     ctx.beginPath();
     ctx.moveTo(userCanvas.x, userCanvas.y);
     ctx.lineTo(actualCanvas.x, actualCanvas.y);
     ctx.stroke();
+
+    ctx.restore();
 }
 
-function drawStar(word, xValue, yValue) {
+function drawStar(word, xValue, yValue, color) {
     const point =
         graphToCanvas(xValue, yValue);
 
+    ctx.save();
+
+    ctx.fillStyle = color;
     ctx.font = "22px Arial";
     ctx.fillText("★", point.x - 8, point.y + 8);
 
-    ctx.font = "14px Arial";
-    ctx.fillText(`${word} actual`, point.x + 12, point.y + 5);
+    ctx.restore();
 }
+
+canvas.addEventListener("mousedown", event => {
+    const rect = canvas.getBoundingClientRect();
+
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    draggedPoint = userPoints.find(point => {
+        const canvasPoint =
+            graphToCanvas(point.x, point.y);
+
+        const dx = mouseX - canvasPoint.x;
+        const dy = mouseY - canvasPoint.y;
+
+        return Math.sqrt(dx * dx + dy * dy) < 12;
+    });
+});
+
+canvas.addEventListener("mousemove", event => {
+    if (!draggedPoint) {
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    const graphPoint =
+        canvasToGraph(mouseX, mouseY);
+
+    draggedPoint.x = graphPoint.x;
+    draggedPoint.y = graphPoint.y;
+
+    redrawUserPoints();
+});
+
+canvas.addEventListener("mouseup", () => {
+    draggedPoint = null;
+});
+
+canvas.addEventListener("mouseleave", () => {
+    draggedPoint = null;
+});

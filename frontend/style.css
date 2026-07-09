@@ -190,3 +190,7 @@ label[for="usertext"] {
     font-size: 14px;
     pointer-events: none;
 }
+
+a {
+    text-decoration: none;
+}
