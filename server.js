@@ -507,6 +507,123 @@ app.post("/api/embedding-concept-graph", async (req, res) => {
     }
 });
 
+app.post("/api/point-embedding-actuals", async (req, res) => {
+    try {
+        const words = req.body.words;
+        let xAxis = req.body.xAxis;
+        let yAxis = req.body.yAxis;
+
+        const needsAxisChoice =
+            !xAxis || !yAxis;
+
+        if (needsAxisChoice) {
+            const axisResponse =
+                await client.chat.completions.create({
+                    model: "gpt-5.4",
+                    messages: [
+                        {
+                            role: "system",
+                            content:
+                                "Given a list of words and optionally one provided axis, choose intuitive x and y axis concepts for placing the words on a 2D semantic map. If an axis is already provided, keep it exactly and only choose the missing axis. Return only valid JSON like this: {\"xAxis\":\"royalty\",\"yAxis\":\"gender\"}"
+                        },
+                        {
+                            role: "user",
+                            content: JSON.stringify({
+                                words: words,
+                                xAxis: xAxis,
+                                yAxis: yAxis
+                            })
+                        }
+                    ],
+                    max_completion_tokens: 100
+                });
+
+            const axisData = JSON.parse(
+                axisResponse.choices[0].message.content
+            );
+
+            if (!xAxis) {
+                xAxis = axisData.xAxis;
+            }
+
+            if (!yAxis) {
+                yAxis = axisData.yAxis;
+            }
+        }
+
+        const inputs = [
+            ...words,
+            xAxis,
+            yAxis
+        ];
+
+        const response = await client.embeddings.create({
+            model: "text-embedding-3-small",
+            input: inputs
+        });
+
+        const wordEmbeddings =
+            response.data.slice(0, words.length);
+
+        const xAxisEmbedding =
+            response.data[words.length].embedding;
+
+        const yAxisEmbedding =
+            response.data[words.length + 1].embedding;
+
+        const rawPoints =
+            wordEmbeddings.map((item, index) => ({
+                word: words[index],
+                x: cosineSimilarity(
+                    item.embedding,
+                    xAxisEmbedding
+                ),
+                y: cosineSimilarity(
+                    item.embedding,
+                    yAxisEmbedding
+                )
+            }));
+
+        const xs = rawPoints.map(point => point.x);
+        const ys = rawPoints.map(point => point.y);
+
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        function normalize(value, min, max) {
+            if (max === min) {
+                return 0;
+            }
+
+            return ((value - min) / (max - min)) * 2 - 1;
+        }
+
+        const points = rawPoints.map(point => ({
+            word: point.word,
+            x: normalize(point.x, minX, maxX),
+            y: normalize(point.y, minY, maxY)
+        }));
+
+        res.json({
+            success: true,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            points: points
+        });
+    }
+
+    catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            error: "Could not get actual embedding points"
+        });
+    }
+});
+
 // Start server on port 3000
 app.listen(3000, () => {
     console.log("Server running on port 3000");
