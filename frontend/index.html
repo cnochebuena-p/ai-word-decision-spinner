@@ -4,50 +4,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="point-page"></body>
-<body>
+<body class="spinner-page">
 
     <div class="background-box left-box"></div>
     <div class="background-box right-box"></div>
-    
-    <h3>Enter some text to see the AI's next word choice!</h3>
 
-    <div class="slider-group">
-        <span id="temperatureSliderValue">Temperature: 1.0</span>
-        <input type="range" min="0" max="20" value="10"
-        class="slider" id="temperatureSlider">
-    </div>
+    <div class="left-content">
+        <h3>Enter some text to see the AI's next word choice!</h3>
 
-    <div class="slider-group">
-        <span id="topKSliderValue">Top-K: 10</span>
-        <input type="range" min="1" max="10" value="5"
-        class="slider" id="topKSlider">
+        <div class="slider-group">
+            <span id="temperatureSliderValue">Temperature: 1.0</span>
+            <input type="range" min="0" max="20" value="10"
+            class="slider" id="temperatureSlider">
+        </div>
+
+        <div class="slider-group">
+            <span id="topKSliderValue">Top-K: 10</span>
+            <input type="range" min="1" max="10" value="5"
+            class="slider" id="topKSlider">
+        </div>
+
+        <label for="usertext">Enter your text:</label>
+        <textarea id="usertext"></textarea>
+
+        <div class="button-column">
+
+            <button type="button" id="wordpredict" class="nav-button">
+                Predict next words
+            </button>
+
+            <a href="embeddings.html" class="nav-button">
+                Embedding Explorer
+            </a>
+
+            <button type="button" id="tokenizeButton" class="nav-button">
+                Tokenize input
+            </button>
+
+            <button type="button" id="hideTokenButton" style="display: none;">
+                Hide tokenized input
+            </button>
+
+        </div>
+
+        <textarea id="tokenizedOutput" readonly style="display: none;"></textarea>
     </div>
 
     <a href="/" class="logo-link">
         <img src="https://i.imgur.com/U1035dV.png" class="logo">
     </a>
-
-    <label for="usertext">Enter your text:</label>
-    <textarea id="usertext"></textarea>
-
-    <button type="button" id="wordpredict">
-        Predict next words
-    </button>
-
-    <a href="embeddings.html" class="nav-button">
-        Embedding Explorer
-    </a>
-
-    <button type="button" id="tokenizeButton">
-        Tokenize input
-    </button>
-
-    <button type="button" id="hideTokenButton" style="display: none;">
-        Hide tokenized input
-    </button>
-
-<textarea id="tokenizedOutput" readonly style="display: none;"></textarea>
 
     <div class="spinner-area">
         <div class="pointer">▼</div>
