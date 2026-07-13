@@ -1,20 +1,45 @@
-// Imports Express framework to handle /predict route
 const express = require("express");
-
-// Imports OpenAI SDK
+const path = require("path");
 const OpenAI = require("openai");
 
-// Loads .env file
 require("dotenv").config();
 
-// Creates Express app instance
 const app = express();
 
-// Allows server to read JSON requests
 app.use(express.json());
 
-// Allows delivery of files to browser without modification
-app.use(express.static("frontend"));
+const publicFolder = path.join(__dirname, "public");
+
+console.log("Current working directory:", process.cwd());
+console.log("Server directory:", __dirname);
+console.log("Looking for frontend files in:", publicFolder);
+console.log(
+    "Looking for index.html at:",
+    path.join(publicFolder, "index.html")
+);
+
+app.use(express.static(publicFolder));
+
+app.get("/", (req, res) => {
+    res.sendFile(
+        path.join(publicFolder, "index.html"),
+        error => {
+            if (error) {
+                console.error(
+                    "Could not send index.html:",
+                    error.message
+                );
+
+                res.status(error.statusCode || 500).send(
+                    `Could not find index.html at ${path.join(
+                        publicFolder,
+                        "index.html"
+                    )}`
+                );
+            }
+        }
+    );
+});
 
 // OpenAI client creation with key from env file
 const client = new OpenAI({

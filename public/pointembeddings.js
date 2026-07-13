@@ -17,6 +17,16 @@ let userPoints = [];
 plotPointsButton.addEventListener("click", drawGraph);
 checkPointsButton.addEventListener("click", checkActualPoints);
 
+function updateCoordinateInput(point) {
+    const coordinateInput =
+        document.getElementById(
+            `coord${point.inputIndex}`
+        );
+
+    coordinateInput.value =
+        `(${point.x.toFixed(2)}, ${point.y.toFixed(2)})`;
+}
+
 function drawGraph() {
     drawAxes();
 
@@ -44,7 +54,8 @@ function drawGraph() {
         userPoints.push({
             word: word,
             x: point.x,
-            y: point.y
+            y: point.y,
+            inputIndex: i
         });
 
         drawPoint(word, point.x, point.y);
@@ -136,7 +147,7 @@ async function checkActualPoints() {
 }
 
 function drawAxes() {
-    const margin = 30;
+    const margin = 75;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -223,7 +234,7 @@ function redrawUserPoints() {
 }
 
 function graphToCanvas(xValue, yValue) {
-    const margin = 30;
+    const margin = 75;
 
     const graphWidth =
         canvas.width - 2 * margin;
@@ -282,45 +293,84 @@ function drawStar(word, xValue, yValue, color) {
 }
 
 canvas.addEventListener("mousedown", event => {
-    const rect = canvas.getBoundingClientRect();
-
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
+    const mouse =
+        getCanvasMousePosition(event);
 
     draggedPoint = userPoints.find(point => {
         const canvasPoint =
             graphToCanvas(point.x, point.y);
 
-        const dx = mouseX - canvasPoint.x;
-        const dy = mouseY - canvasPoint.y;
+        const dx =
+            mouse.x - canvasPoint.x;
 
-        return Math.sqrt(dx * dx + dy * dy) < 12;
+        const dy =
+            mouse.y - canvasPoint.y;
+
+        return Math.sqrt(dx * dx + dy * dy) <= 15;
     });
+
+    if (draggedPoint) {
+        canvas.style.cursor = "grabbing";
+    }
 });
 
 canvas.addEventListener("mousemove", event => {
+    const mouse =
+        getCanvasMousePosition(event);
+
     if (!draggedPoint) {
+        const hoveringPoint =
+            userPoints.some(point => {
+                const canvasPoint =
+                    graphToCanvas(point.x, point.y);
+
+                const dx =
+                    mouse.x - canvasPoint.x;
+
+                const dy =
+                    mouse.y - canvasPoint.y;
+
+                return Math.sqrt(dx * dx + dy * dy) <= 15;
+            });
+
+        canvas.style.cursor =
+            hoveringPoint ? "grab" : "default";
+
         return;
     }
 
-    const rect = canvas.getBoundingClientRect();
-
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
     const graphPoint =
-        canvasToGraph(mouseX, mouseY);
+        canvasToGraph(mouse.x, mouse.y);
 
     draggedPoint.x = graphPoint.x;
     draggedPoint.y = graphPoint.y;
+
+    updateCoordinateInput(draggedPoint);
 
     redrawUserPoints();
 });
 
 canvas.addEventListener("mouseup", () => {
     draggedPoint = null;
+    canvas.style.cursor = "default";
 });
 
 canvas.addEventListener("mouseleave", () => {
     draggedPoint = null;
+    canvas.style.cursor = "default";
 });
+
+function getCanvasMousePosition(event) {
+    const rect = canvas.getBoundingClientRect();
+
+    const scaleX =
+        canvas.width / rect.width;
+
+    const scaleY =
+        canvas.height / rect.height;
+
+    return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+    };
+}

@@ -22,46 +22,63 @@ let currentRotation = 0;
 
 // Sends text to server; awaits response
 async function generateNextWords(textResponse) {
+    try {
+        const response = await fetch("/predict", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: textResponse,
 
-    // Sends text to Express backend route
-    const response = await fetch("/predict", {
-        method: "POST",
+                temperature:
+                    Number(
+                        document.getElementById(
+                            "temperatureSlider"
+                        ).value
+                    ) / 10,
 
-        // Tells server it is sending JSON data
-        headers: {
-            "Content-Type": "application/json"
-        },
+                topK:
+                    Number(
+                        document.getElementById(
+                            "topKSlider"
+                        ).value
+                    ) * 2
+            })
+        });
 
-        // Turns text into JSON string
-    body: JSON.stringify({
-    text: textResponse,
+        const data = await response.json();
 
-    temperature: Number(
-        document.getElementById("temperatureSlider").value
-    ) / 10,
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                `Request failed with status ${response.status}`
+            );
+        }
 
-    topK: Number(
-        document.getElementById("topKSlider").value
-    ) * 2 })
-    });
+        const temperature =
+            Number(
+                document.getElementById(
+                    "temperatureSlider"
+                ).value
+            ) / 10;
 
-    // Waits for response from server and converts into JSON
-    const data = await response.json();
+        currentProbabilities =
+            createTemperatureProbabilities(
+                data.result,
+                temperature
+            );
 
-    // Stores words and probabilities for spinner use
-    const temperature =
-    Number(
-        document.getElementById("temperatureSlider").value
-    ) / 10;
+        drawWheel(currentProbabilities);
+    }
 
-    currentProbabilities =
-        createTemperatureProbabilities(
-            data.result,
-            temperature
+    catch (error) {
+        console.error("Prediction error:", error);
+
+        alert(
+            `Prediction failed: ${error.message}`
         );
-
-    // Updates spinner with new probabilities
-    drawWheel(currentProbabilities);
+    }
 }
 
 // Creates spinner slices based on probabilities
@@ -293,33 +310,6 @@ document
     .getElementById("topKSlider")
     .addEventListener("change", updatePredictionFromCurrentText);
 
-const axisMapButton =
-    document.getElementById("axisMapButton");
-
-axisMapButton.addEventListener("click", async () => {
-    const text =
-        document.getElementById("usertext").value;
-
-    const response = await fetch("/api/axis-map", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            text: text
-        })
-    });
-
-    const data = await response.json();
-
-    if (!data.success) {
-        alert(data.error);
-        return;
-    }
-
-    drawAxisMap(data.axisMap);
-});
-
 function drawAxisMap(axisMap) {
     const canvas = document.getElementById("axisCanvas");
     const ctx = canvas.getContext("2d");
@@ -357,10 +347,3 @@ function drawAxisMap(axisMap) {
         ctx.fillText(point.word, x + 10, y);
     });
 }
-
-const embeddingPageButton =
-    document.getElementById("embeddingPageButton");
-
-embeddingPageButton.addEventListener("click", () => {
-    window.location.href = "embeddings.html";
-});
