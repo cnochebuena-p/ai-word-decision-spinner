@@ -94,13 +94,25 @@ async function checkActualPoints() {
 
     const data = await response.json();
 
-    document.getElementById("actualAxesUsed").textContent =
-    `Actual axes used: x = ${data.xAxis}, y = ${data.yAxis}`;
+    console.log(data);
+    console.log("Returned x-axis:", data.xAxis);
+    console.log("Returned y-axis:", data.yAxis);
 
     if (!data.success) {
         alert(data.error);
         return;
     }
+
+    // Save the AI-chosen axes into the input boxes
+    document.getElementById("pointXAxis").value =
+        data.xAxis;
+
+    document.getElementById("pointYAxis").value =
+        data.yAxis;
+
+    // Display the axes used
+    document.getElementById("actualAxesUsed").textContent =
+        `Actual axes used: x = ${data.xAxis}, y = ${data.yAxis}`;
 
     let totalDistance = 0;
 
@@ -205,7 +217,7 @@ function parseCoordinate(text) {
 }
 
 function canvasToGraph(canvasX, canvasY) {
-    const margin = 30;
+    const margin = 75;
 
     const graphWidth =
         canvas.width - 2 * margin;
@@ -292,31 +304,33 @@ function drawStar(word, xValue, yValue, color) {
     ctx.restore();
 }
 
-canvas.addEventListener("mousedown", event => {
-    const mouse =
-        getCanvasMousePosition(event);
+canvas.addEventListener("pointerdown", event => {
+    const mouse = getCanvasMousePosition(event);
 
     draggedPoint = userPoints.find(point => {
         const canvasPoint =
             graphToCanvas(point.x, point.y);
 
-        const dx =
-            mouse.x - canvasPoint.x;
-
-        const dy =
-            mouse.y - canvasPoint.y;
+        const dx = mouse.x - canvasPoint.x;
+        const dy = mouse.y - canvasPoint.y;
 
         return Math.sqrt(dx * dx + dy * dy) <= 15;
     });
 
-    if (draggedPoint) {
-        canvas.style.cursor = "grabbing";
+    if (!draggedPoint) {
+        return;
     }
+
+    activePointerId = event.pointerId;
+
+    // Continue receiving drag events even outside the canvas.
+    canvas.setPointerCapture(event.pointerId);
+
+    canvas.style.cursor = "grabbing";
 });
 
-canvas.addEventListener("mousemove", event => {
-    const mouse =
-        getCanvasMousePosition(event);
+canvas.addEventListener("pointermove", event => {
+    const mouse = getCanvasMousePosition(event);
 
     if (!draggedPoint) {
         const hoveringPoint =
@@ -324,11 +338,8 @@ canvas.addEventListener("mousemove", event => {
                 const canvasPoint =
                     graphToCanvas(point.x, point.y);
 
-                const dx =
-                    mouse.x - canvasPoint.x;
-
-                const dy =
-                    mouse.y - canvasPoint.y;
+                const dx = mouse.x - canvasPoint.x;
+                const dy = mouse.y - canvasPoint.y;
 
                 return Math.sqrt(dx * dx + dy * dy) <= 15;
             });
@@ -346,19 +357,24 @@ canvas.addEventListener("mousemove", event => {
     draggedPoint.y = graphPoint.y;
 
     updateCoordinateInput(draggedPoint);
-
     redrawUserPoints();
 });
 
-canvas.addEventListener("mouseup", () => {
-    draggedPoint = null;
-    canvas.style.cursor = "default";
-});
+function finishDragging(event) {
+    if (
+        activePointerId !== null &&
+        canvas.hasPointerCapture(activePointerId)
+    ) {
+        canvas.releasePointerCapture(activePointerId);
+    }
 
-canvas.addEventListener("mouseleave", () => {
     draggedPoint = null;
+    activePointerId = null;
     canvas.style.cursor = "default";
-});
+}
+
+canvas.addEventListener("pointerup", finishDragging);
+canvas.addEventListener("pointercancel", finishDragging);
 
 function getCanvasMousePosition(event) {
     const rect = canvas.getBoundingClientRect();

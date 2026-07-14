@@ -535,8 +535,15 @@ app.post("/api/embedding-concept-graph", async (req, res) => {
 app.post("/api/point-embedding-actuals", async (req, res) => {
     try {
         const words = req.body.words;
-        let xAxis = req.body.xAxis;
-        let yAxis = req.body.yAxis;
+    let xAxis =
+        typeof req.body.xAxis === "string"
+            ? req.body.xAxis.trim().toLowerCase()
+            : "";
+
+    let yAxis =
+        typeof req.body.yAxis === "string"
+            ? req.body.yAxis.trim().toLowerCase()
+            : "";
 
         const needsAxisChoice =
             !xAxis || !yAxis;
@@ -609,27 +616,40 @@ app.post("/api/point-embedding-actuals", async (req, res) => {
                 )
             }));
 
-        const xs = rawPoints.map(point => point.x);
-        const ys = rawPoints.map(point => point.y);
+        const maxXExtreme = Math.max(
+            ...rawPoints.map(point =>
+                Math.abs(point.x)
+            )
+        );
 
-        const minX = Math.min(...xs);
-        const maxX = Math.max(...xs);
-        const minY = Math.min(...ys);
-        const maxY = Math.max(...ys);
+// --- Uniform scaling for the points on the graph ---
 
-        function normalize(value, min, max) {
-            if (max === min) {
-                return 0;
-            }
+/*
+        const maxYExtreme = Math.max(
+            ...rawPoints.map(point =>
+                Math.abs(point.y)
+            )
+        );
 
-            return ((value - min) / (max - min)) * 2 - 1;
-        }
+        const xScale =
+            maxXExtreme === 0
+                ? 1
+                : 1 / maxXExtreme;
+
+        const yScale =
+            maxYExtreme === 0
+                ? 1
+                : 1 / maxYExtreme;
 
         const points = rawPoints.map(point => ({
             word: point.word,
-            x: normalize(point.x, minX, maxX),
-            y: normalize(point.y, minY, maxY)
+            x: point.x * xScale,
+            y: point.y * yScale
         }));
+*/
+// ---                     --- 
+    
+        const points = rawPoints;
 
         res.json({
             success: true,

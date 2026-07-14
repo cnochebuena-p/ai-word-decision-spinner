@@ -372,3 +372,8 @@ a {
         max-width: 100%;
     }
 }
+
+#pointCanvas {
+    touch-action: none;
+    user-select: none;
+}
