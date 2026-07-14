@@ -4,56 +4,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class = "embeddings-page">
+
+<body class="embeddings-page">
+
     <h3>Embedding Visualizer</h3>
 
-    <a href="index.html">
-        <button type="button">Back to spinner</button>
+    <a href="index.html" class="nav-button">
+        Back to spinner
     </a>
 
-    <a href="pointembeddings.html">
-        <button type="button">
-            Point Embedding Explorer
-        </button>
+    <a href="pointembeddings.html" class="nav-button">
+        Point Embedding Explorer
     </a>
 
-    <label for="embeddingText">Enter text:</label>
-    <textarea id="embeddingText"></textarea>
-
-    <button type="button" id="axisMapButton">
-        Show AI axis map
-    </button>
-
-    <canvas id="axisCanvas" width="400" height="300"></canvas>
-
-    <a href="cumulative.html">
-        <button type="button">
-            Cumulative concept graph
-        </button>
+    <a href="cumulative.html" class="nav-button">
+        Cumulative Concept Graph
     </a>
 
-    <label for="similarityMetric">
-        Similarity metric:
-    </label>
+    <div class="embeddings-layout">
 
-    <select id="similarityMetric">
-        <option value="cosine" selected>
-            Cosine similarity
-        </option>
+        <div class="embeddings-graph-area">
+            <canvas
+                id="axisCanvas"
+                width="850"
+                height="600"
+            ></canvas>
+        </div>
 
-        <option value="dot">
-            Dot product
-        </option>
-    </select>
+        <div class="embeddings-controls">
 
-    <input id="xAxisInput" placeholder="x-axis concept, e.g. royalty">
-    <input id="yAxisInput" placeholder="y-axis concept, e.g. gender">
+            <label for="embeddingText">
+                Enter text:
+            </label>
 
-    <button type="button" id="customAxisButton">
-        Show custom axis map
-    </button>
+            <textarea id="embeddingText"></textarea>
 
-    <canvas id="customAxisCanvas" width="500" height="350"></canvas>
+            <button type="button" id="axisMapButton">
+                Show AI axis map
+            </button>
+
+            <h3>Custom embedding axes</h3>
+
+            <label for="xAxisInput">
+                X-axis:
+            </label>
+
+            <input
+                id="xAxisInput"
+                placeholder="e.g. royalty"
+            >
+
+            <label for="yAxisInput">
+                Y-axis:
+            </label>
+
+            <input
+                id="yAxisInput"
+                placeholder="e.g. gender"
+            >
+
+            <label for="similarityMetric">
+                Similarity metric:
+            </label>
+
+            <select id="similarityMetric">
+                <option value="cosine">
+                    Cosine similarity
+                </option>
+
+                <option value="dot">
+                    Dot product
+                </option>
+            </select>
+
+            <button type="button" id="customAxisButton">
+                Show custom axis map
+            </button>
+
+            <canvas
+                id="customAxisCanvas"
+                width="500"
+                height="350"
+            ></canvas>
+
+        </div>
+
+    </div>
 
     <script src="embeddings.js"></script>
 </body>

@@ -438,16 +438,6 @@ app.post("/api/custom-axis-map", async (req, res) => {
     }
 });
 
-function dotProduct(a, b) {
-    let sum = 0;
-
-    for (let i = 0; i < a.length; i++) {
-        sum += a[i] * b[i];
-    }
-
-    return sum;
-}
-
 app.post("/api/embedding-concept-graph", async (req, res) => {
     try {
         const text = req.body.text;
@@ -624,7 +614,7 @@ app.post("/api/point-embedding-actuals", async (req, res) => {
 
 // --- Uniform scaling for the points on the graph ---
 
-/*
+
         const maxYExtreme = Math.max(
             ...rawPoints.map(point =>
                 Math.abs(point.y)
@@ -646,10 +636,28 @@ app.post("/api/point-embedding-actuals", async (req, res) => {
             x: point.x * xScale,
             y: point.y * yScale
         }));
-*/
+
 // ---                     --- 
     
-        const points = rawPoints;
+        //const points = rawPoints;
+
+        console.log("Axes:", {
+            xAxis,
+            yAxis
+        });
+
+        console.log("Raw points:");
+        console.table(rawPoints);
+
+        console.log("Scaling:", {
+            maxXExtreme,
+            maxYExtreme,
+            xScale,
+            yScale
+        });
+
+        console.log("Scaled points:");
+        console.table(points);
 
         res.json({
             success: true,
