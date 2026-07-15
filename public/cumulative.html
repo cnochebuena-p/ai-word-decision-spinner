@@ -1,30 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Cumulative Concept Graph</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
-<body class = "cumulative-page">
-    <h3>Cumulative Concept Graph</h3>
 
-    <a href="embeddings.html">
-        <button type="button">Back to embeddings</button>
-    </a>
+<body class="cumulative-page">
 
-    <label for="cumulativeText">Enter text:</label>
-    <textarea id="cumulativeText"></textarea>
+    <header class="cumulative-header">
+        <h2>Cumulative Concept Graph</h2>
 
-    <button type="button" id="conceptGraphButton">
-        Show cumulative concept graph
-    </button>
+        <a href="embeddings.html" class="nav-button">
+            Back to Embeddings
+        </a>
+    </header>
 
-    <button type="button" id="toggleConceptGraphButton">
-        Switch to embedding cumulative graph
-    </button>
+    <main class="cumulative-layout">
 
-    <div id="conceptTooltip"></div>
+        <section class="cumulative-graph-area">
+            <canvas
+                id="conceptCanvas"
+                width="850"
+                height="600"
+            ></canvas>
 
-    <canvas id="conceptCanvas" width="500" height="300"></canvas>
+            <div id="conceptTooltip"></div>
+        </section>
+
+        <section class="cumulative-controls">
+
+            <label for="cumulativeText">
+                Enter text:
+            </label>
+
+            <textarea
+                id="cumulativeText"
+                placeholder="For example: sun ice fire"
+            ></textarea>
+
+            <button
+                type="button"
+                id="conceptGraphButton"
+                class="nav-button"
+            >
+                Show Cumulative Concept Graph
+            </button>
+
+            <button
+                type="button"
+                id="toggleConceptGraphButton"
+                class="nav-button"
+            >
+                Switch to Embedding Cumulative Graph
+            </button>
+        </section>
+
+    </main>
 
     <script src="cumulative.js"></script>
 </body>

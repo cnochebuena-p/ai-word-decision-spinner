@@ -414,10 +414,23 @@ app.post("/api/custom-axis-map", async (req, res) => {
         const yAxisEmbedding =
             response.data[words.length + 1].embedding;
 
+        const similarityFunction =
+            metric === "dot"
+                ? dotProduct
+                : cosineSimilarity;
+
         const points = wordEmbeddings.map((item, index) => ({
             word: words[index],
-            x: dotProduct(item.embedding, xAxisEmbedding),
-            y: dotProduct(item.embedding, yAxisEmbedding)
+
+            x: similarityFunction(
+                item.embedding,
+                xAxisEmbedding
+            ),
+
+            y: similarityFunction(
+                item.embedding,
+                yAxisEmbedding
+            )
         }));
 
         res.json({

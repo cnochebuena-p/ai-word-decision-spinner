@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Custom Embedding Axes</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="custom-axes-page">
+    <header class="custom-axes-header">
+        <h2>Custom Embedding Axes</h2>
+
+        <a href="embeddings.html" class="nav-button">
+            Back to Embeddings
+        </a>
+    </header>
+
+    <main class="custom-axes-layout">
+        <section class="custom-axes-graph-area">
+            <canvas
+                id="customAxisCanvas"
+                width="850"
+                height="600"
+            ></canvas>
+        </section>
+
+        <section class="custom-axes-controls">
+            <label for="customAxisText">
+                Enter words:
+            </label>
+
+            <textarea
+                id="customAxisText"
+                placeholder="For example: king queen man woman"
+            ></textarea>
+
+            <label for="xAxisInput">
+                X-axis concept:
+            </label>
+
+            <input
+                id="xAxisInput"
+                placeholder="For example: royalty"
+            >
+
+            <label for="yAxisInput">
+                Y-axis concept:
+            </label>
+
+            <input
+                id="yAxisInput"
+                placeholder="For example: gender"
+            >
+
+            <label for="similarityMetric">
+                Similarity metric:
+            </label>
+
+            <select id="similarityMetric">
+                <option value="cosine">
+                    Cosine similarity
+                </option>
+
+                <option value="dot">
+                    Dot product
+                </option>
+            </select>
+
+            <button
+                type="button"
+                id="customAxisButton"
+                class="nav-button"
+            >
+                Show Custom Axis Map
+            </button>
+
+            <p id="customAxisMessage"></p>
+        </section>
+    </main>
+
+    <script src="customaxes.js"></script>
+</body>
+</html>

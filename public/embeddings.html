@@ -14,11 +14,15 @@
     </a>
 
     <a href="pointembeddings.html" class="nav-button">
-        Point Embedding Explorer
+        Embeddings Score Activity
     </a>
 
     <a href="cumulative.html" class="nav-button">
         Cumulative Concept Graph
+    </a>
+
+    <a href="customaxes.html" class="nav-button">
+        Custom Embedding Axes
     </a>
 
     <div class="embeddings-layout">
@@ -42,50 +46,6 @@
             <button type="button" id="axisMapButton">
                 Show AI axis map
             </button>
-
-            <h3>Custom embedding axes</h3>
-
-            <label for="xAxisInput">
-                X-axis:
-            </label>
-
-            <input
-                id="xAxisInput"
-                placeholder="e.g. royalty"
-            >
-
-            <label for="yAxisInput">
-                Y-axis:
-            </label>
-
-            <input
-                id="yAxisInput"
-                placeholder="e.g. gender"
-            >
-
-            <label for="similarityMetric">
-                Similarity metric:
-            </label>
-
-            <select id="similarityMetric">
-                <option value="cosine">
-                    Cosine similarity
-                </option>
-
-                <option value="dot">
-                    Dot product
-                </option>
-            </select>
-
-            <button type="button" id="customAxisButton">
-                Show custom axis map
-            </button>
-
-            <canvas
-                id="customAxisCanvas"
-                width="500"
-                height="350"
-            ></canvas>
 
         </div>
 

@@ -13,10 +13,6 @@ body {
     background-color: hsla(134, 38%, 49%, 0.749);
 }
 
-.cumulative-page {
-    background-color: hsl(92, 57%, 67%);
-}
-
 .point-page {
     background-color: hsl(93, 48%, 83%);
 }
@@ -418,22 +414,162 @@ a {
     box-sizing: border-box;
 }
 
+.custom-axes-page {
+    min-height: 100vh;
+    padding: 20px 40px;
+    background-color: hsl(150, 42%, 78%);
+    box-sizing: border-box;
+}
+
+.custom-axes-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.custom-axes-header h2 {
+    margin: 0;
+}
+
+.custom-axes-layout {
+    display: grid;
+    grid-template-columns: minmax(600px, 1fr) 380px;
+    gap: 35px;
+    align-items: start;
+}
+
+.custom-axes-graph-area {
+    width: 100%;
+}
+
 #customAxisCanvas {
     display: block;
-
     width: 100%;
+    max-width: 900px;
     height: auto;
-
     border: 2px solid black;
     background-color: white;
 }
 
+.custom-axes-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 10px;
+}
+
+.custom-axes-controls textarea {
+    width: 100%;
+    height: 120px;
+    padding: 8px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.custom-axes-controls input,
+.custom-axes-controls select,
+.custom-axes-controls button {
+    width: 100%;
+    padding: 9px;
+    box-sizing: border-box;
+}
+
+#customAxisMessage {
+    overflow-wrap: anywhere;
+}
+
+.cumulative-page {
+    min-height: 100vh;
+    padding: 20px 40px;
+    background-color: hsl(92, 57%, 67%);
+    box-sizing: border-box;
+}
+
+.cumulative-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.cumulative-header h2 {
+    margin: 0;
+}
+
+.cumulative-layout {
+    display: grid;
+    grid-template-columns: minmax(600px, 1fr) 380px;
+    gap: 35px;
+    align-items: start;
+}
+
+.cumulative-graph-area {
+    position: relative;
+    width: 100%;
+}
+
+#conceptCanvas {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    margin: 0;
+    border: 2px solid black;
+    background-color: white;
+}
+
+.cumulative-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.cumulative-controls textarea {
+    width: 100%;
+    height: 140px;
+    padding: 10px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.cumulative-controls button {
+    width: 100%;
+}
+
+.cumulative-description {
+    margin: 8px 0 0;
+    line-height: 1.4;
+}
+
+#conceptTooltip {
+    display: none;
+    position: absolute;
+    z-index: 10;
+    background: black;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    pointer-events: none;
+}
+
 @media (max-width: 1000px) {
-    .embeddings-layout {
+    .cumulative-layout {
         grid-template-columns: 1fr;
     }
 
-    .embeddings-controls {
+    .cumulative-controls {
         max-width: 600px;
+    }
+
+    #conceptCanvas {
+        max-width: 100%;
     }
 }
