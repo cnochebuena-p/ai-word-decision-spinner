@@ -15,12 +15,12 @@ function updateSliderValue(event) {
             `Temperature: ${value}`;
     }
 
-    else if (slider.id === "topKSlider") {
-    const k =
+    else if (slider.id === "topNSlider") {
+    const topN =
         Number(slider.value) * 2;
 
     output.textContent =
-        `Top-K: ${k}`;
+        `Top-N: ${topN}`;
 }
 }
 

@@ -159,30 +159,43 @@ function drawConceptGraph(conceptGraph) {
     canvas.onmousemove = event => {
         const rect = canvas.getBoundingClientRect();
 
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-        const hoveredPoint = conceptHoverPoints.find(point => {
-            const dx = mouseX - point.x;
-            const dy = mouseY - point.y;
+        const mouseX =
+            (event.clientX - rect.left) * scaleX;
 
-            return Math.sqrt(dx * dx + dy * dy) < 10;
-        });
+        const mouseY =
+            (event.clientY - rect.top) * scaleY;
+
+        const hoveredPoint =
+            conceptHoverPoints.find(point => {
+                const dx = mouseX - point.x;
+                const dy = mouseY - point.y;
+
+                return Math.sqrt(
+                    dx * dx + dy * dy
+                ) <= 10;
+            });
 
         if (hoveredPoint) {
             tooltip.style.display = "block";
-            tooltip.style.left = `${event.pageX + 12}px`;
-            tooltip.style.top = `${event.pageY + 12}px`;
+
+            tooltip.style.left =
+                `${event.pageX + 10}px`;
+
+            tooltip.style.top =
+                `${event.pageY}px`;
 
             tooltip.textContent =
-                `${hoveredPoint.word} | score: ${hoveredPoint.score.toFixed(2)} | cumulative: ${hoveredPoint.phraseValue.toFixed(2)}`;
-        } else {
+                `${hoveredPoint.word} | ` +
+                `score: ${hoveredPoint.score.toFixed(2)} | ` +
+                `cumulative: ${hoveredPoint.phraseValue.toFixed(2)}`;
+        }
+
+        else {
             tooltip.style.display = "none";
         }
-    };
-
-    canvas.onmouseleave = () => {
-        tooltip.style.display = "none";
     };
 }
 

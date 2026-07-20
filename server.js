@@ -55,15 +55,15 @@ app.post("/predict", async (req, res) => {
 
     // Reads slider values from browser
     const temperature = req.body.temperature;
-    const topK = req.body.topK;
+    const topN = req.body.topN;
 
     // Prints slider values to terminal
 
     console.log(
         "Temperature:",
         temperature,
-        "Top-K:",
-        topK
+        "Top-N:",
+        topN
     );
 
     // OpenAI API call to create a list of likely next words
@@ -75,7 +75,7 @@ app.post("/predict", async (req, res) => {
                 {
                     role: "system",
                     content:
-                        `Given the user's text, return exactly ${topK} likely next whole words with estimated probabilities. The probabilities must add up to 100. Return only valid JSON like this: [{"word":"example","probability":40}]`
+                        `Given the user's text, return exactly ${topN} likely next whole words with estimated probabilities. The probabilities must add up to 100. Return only valid JSON like this: [{"word":"example","probability":40}]`
                 },
                 {
                     role: "user",
@@ -182,14 +182,14 @@ function createTemperatureProbabilities(words, temperature) {
 /* example API call for next words:
 curl -X POST "http://localhost:3000/api/next-words" \
   -H "Content-Type: application/json" \
-  -d '{"text":"The dog ran to the","temperature":1.0,"k":10}'
+  -d '{"text":"The dog ran to the","temperature":1.0,"topN":10}'
 */
 
 app.post("/api/next-words", async (req, res) => {
     try {
         const text = req.body.text;
         const temperature = Number(req.body.temperature);
-        const k = Number(req.body.k);
+        const topN = Number(req.body.topN);
 
         if (!text || typeof text !== "string") {
             return res.status(400).json({
@@ -205,10 +205,10 @@ app.post("/api/next-words", async (req, res) => {
             });
         }
 
-        if (!Number.isInteger(k) || k < 1 || k > 30) {
+        if (!Number.isInteger(topN) || topN < 1 || topN > 30) {
             return res.status(400).json({
                 success: false,
-                error: "k must be an integer from 1 to 30"
+                error: "topN must be an integer from 1 to 30"
             });
         }
 
@@ -220,7 +220,7 @@ app.post("/api/next-words", async (req, res) => {
                     {
                         role: "system",
                         content:
-                            `Given the user's text, return exactly ${k} likely next whole words. Return only valid JSON like this: [{"word":"example"}]`
+                            `Given the user's text, return exactly ${topN} likely next whole words. Return only valid JSON like this: [{"word":"example"}]`
                     },
                     {
                         role: "user",
@@ -245,7 +245,7 @@ app.post("/api/next-words", async (req, res) => {
             success: true,
             input: text,
             temperature: temperature,
-            k: k,
+            topN: topN,
             words: words
         });
     }

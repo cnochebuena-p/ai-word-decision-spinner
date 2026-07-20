@@ -38,10 +38,10 @@ async function generateNextWords(textResponse) {
                         ).value
                     ) / 10,
 
-                topK:
+                topN:
                     Number(
                         document.getElementById(
-                            "topKSlider"
+                            "topNSlider"
                         ).value
                     ) * 2
             })
@@ -307,7 +307,7 @@ document
     .addEventListener("change", updatePredictionFromCurrentText);
 
 document
-    .getElementById("topKSlider")
+    .getElementById("topNSlider")
     .addEventListener("change", updatePredictionFromCurrentText);
 
 function drawAxisMap(axisMap) {
