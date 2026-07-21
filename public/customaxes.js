@@ -13,9 +13,6 @@ async function createCustomAxisMap() {
     const yAxis =
         document.getElementById("yAxisInput").value.trim();
 
-    const metric =
-        document.getElementById("similarityMetric").value;
-
     const message =
         document.getElementById("customAxisMessage");
 
@@ -46,8 +43,7 @@ async function createCustomAxisMap() {
             body: JSON.stringify({
                 text: text,
                 xAxis: xAxis,
-                yAxis: yAxis,
-                metric: metric
+                yAxis: yAxis
             })
         });
 

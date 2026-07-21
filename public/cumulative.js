@@ -179,13 +179,25 @@ function drawConceptGraph(conceptGraph) {
             });
 
         if (hoveredPoint) {
+            const graphArea =
+                document.querySelector(".cumulative-graph-area");
+
+            const graphRect =
+                graphArea.getBoundingClientRect();
+
+            const cursorX =
+                event.clientX - graphRect.left;
+
+            const cursorY =
+                event.clientY - graphRect.top;
+
             tooltip.style.display = "block";
 
             tooltip.style.left =
-                `${event.pageX + 10}px`;
+                `${cursorX + 6}px`;
 
             tooltip.style.top =
-                `${event.pageY}px`;
+                `${cursorY + 6}px`;
 
             tooltip.textContent =
                 `${hoveredPoint.word} | ` +
@@ -203,19 +215,16 @@ toggleConceptGraphButton.addEventListener("click", () => {
     useEmbeddingConceptGraph =
         !useEmbeddingConceptGraph;
 
+    conceptGraphButton.textContent =
+        "Show embedding cumulative graph";
+
     if (useEmbeddingConceptGraph) {
         toggleConceptGraphButton.textContent =
-            "Switch to ChatGPT cumulative graph";
-
-        conceptGraphButton.textContent =
-            "Show embedding cumulative graph";
+            "Switch to ChatGPT generated embeddings";
     }
 
     else {
         toggleConceptGraphButton.textContent =
-            "Switch to embedding cumulative graph";
-
-        conceptGraphButton.textContent =
-            "Show cumulative concept graph";
+            "Switch to OpenAI embeddings";
     }
 });
