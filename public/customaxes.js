@@ -16,24 +16,41 @@ async function createCustomAxisMap() {
     const message =
         document.getElementById("customAxisMessage");
 
+    const selectedSource =
+        document.querySelector(
+            'input[name="embeddingSource"]:checked'
+        );
+
     if (!text) {
+        message.textContent = "Enter at least one word.";
+        return;
+    }
+
+    if (!selectedSource) {
         message.textContent =
-            "Enter at least one word.";
+            "Choose ChatGPT-generated positions or OpenAI embeddings.";
 
         return;
     }
 
-    if (!xAxis || !yAxis) {
-        message.textContent =
-            "Enter both an x-axis and a y-axis.";
+    const embeddingSource = selectedSource.value;
 
-        return;
-    }
+    /*
+        OpenAI mode currently requires both axes because
+        /api/custom-axis-map expects them.
+
+        ChatGPT mode may choose its own axes.
+    */
 
     message.textContent = "Creating graph...";
 
+    const endpoint =
+        embeddingSource === "chatgpt"
+            ? "/api/axis-map"
+            : "/api/custom-axis-map";
+
     try {
-        const response = await fetch("/api/custom-axis-map", {
+        const response = await fetch(endpoint, {
             method: "POST",
 
             headers: {
@@ -56,10 +73,23 @@ async function createCustomAxisMap() {
             return;
         }
 
-        drawCustomAxisMap(data);
+        /*
+            /api/axis-map returns:
+            { success: true, axisMap: {...} }
+
+            /api/custom-axis-map returns:
+            { success: true, xAxis, yAxis, points }
+        */
+        const mapData =
+            embeddingSource === "chatgpt"
+                ? data.axisMap
+                : data;
+
+        drawCustomAxisMap(mapData);
 
         message.textContent =
-            `X-axis: ${data.xAxis} | Y-axis: ${data.yAxis}`;
+            `X-axis: ${mapData.xAxis} | ` +
+            `Y-axis: ${mapData.yAxis}`;
     }
 
     catch (error) {

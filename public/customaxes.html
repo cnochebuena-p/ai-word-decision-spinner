@@ -17,8 +17,16 @@
     <header class="custom-axes-header">
         <h2>Custom Embedding Axes</h2>
 
-        <a href="embeddings.html" class="nav-button">
-            Back to Embeddings
+        <a href="index.html" class="nav-button">
+            Back to Spinner
+        </a>
+
+        <a href="cumulative.html" class="nav-button">
+            Cumulative Concept Graph
+        </a>
+
+        <a href="pointembeddings.html" class="nav-button">
+            Embeddings Score Activity
         </a>
     </header>
 
@@ -58,6 +66,29 @@
                 id="yAxisInput"
                 placeholder="For example: gender"
             >
+
+            <fieldset class="embedding-source-options">
+                <legend>Coordinate source</legend>
+
+                <label>
+                    <input
+                        type="radio"
+                        name="embeddingSource"
+                        value="chatgpt"
+                        checked
+                    >
+                    ChatGPT-generated positions
+                </label>
+
+                <label>
+                    <input
+                        type="radio"
+                        name="embeddingSource"
+                        value="openai"
+                    >
+                    OpenAI embeddings
+                </label>
+            </fieldset>
 
             <button
                 type="button"

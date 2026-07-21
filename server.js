@@ -179,115 +179,165 @@ function createTemperatureProbabilities(words, temperature) {
     }));
 }
 
-/* example API call for next words:
-curl -X POST "http://localhost:3000/api/next-words" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"The dog ran to the","temperature":1.0,"topN":10}'
-*/
+async function chooseMissingAxes(text, providedXAxis, providedYAxis) {
+    let xAxis =
+        typeof providedXAxis === "string"
+            ? providedXAxis.trim()
+            : "";
 
-app.post("/api/next-words", async (req, res) => {
-    try {
-        const text = req.body.text;
-        const temperature = Number(req.body.temperature);
-        const topN = Number(req.body.topN);
+    let yAxis =
+        typeof providedYAxis === "string"
+            ? providedYAxis.trim()
+            : "";
 
-        if (!text || typeof text !== "string") {
-            return res.status(400).json({
-                success: false,
-                error: "text must be a non-empty string"
-            });
-        }
-
-        if (Number.isNaN(temperature) || temperature < 0 || temperature > 2) {
-            return res.status(400).json({
-                success: false,
-                error: "temperature must be a number from 0 to 2"
-            });
-        }
-
-        if (!Number.isInteger(topN) || topN < 1 || topN > 30) {
-            return res.status(400).json({
-                success: false,
-                error: "topN must be an integer from 1 to 30"
-            });
-        }
-
-        const response =
-            await client.chat.completions.create({
-                model: "gpt-5.4",
-
-                messages: [
-                    {
-                        role: "system",
-                        content:
-                            `Given the user's text, return exactly ${topN} likely next whole words. Return only valid JSON like this: [{"word":"example"}]`
-                    },
-                    {
-                        role: "user",
-                        content: text
-                    }
-                ],
-
-                max_completion_tokens: 300
-            });
-
-        const rawWords = JSON.parse(
-            response.choices[0].message.content
-        );
-
-        const words =
-            createTemperatureProbabilities(
-                rawWords,
-                temperature
-            );
-
-        res.json({
-            success: true,
-            input: text,
-            temperature: temperature,
-            topN: topN,
-            words: words
-        });
+    // No API call is needed when the user supplied both axes.
+    if (xAxis && yAxis) {
+        return {
+            xAxis,
+            yAxis
+        };
     }
 
-    catch (error) {
-        console.error(error);
+    const response =
+        await client.chat.completions.create({
+            model: "gpt-5.4",
 
-        res.status(500).json({
-            success: false,
-            error: "Something went wrong"
+            messages: [
+                {
+                    role: "system",
+                    content: `
+Choose intuitive conceptual axes for mapping the user's words.
+
+Rules:
+
+1. If xAxis is provided, preserve it exactly.
+2. If yAxis is provided, preserve it exactly.
+3. Only choose axes that are blank.
+4. The two axes should represent different useful concepts.
+5. Use short, understandable axis names.
+6. Return only valid JSON.
+
+Return this exact structure:
+
+{
+    "xAxis": "axis name",
+    "yAxis": "axis name"
+}
+`
+                },
+                {
+                    role: "user",
+                    content: JSON.stringify({
+                        text,
+                        xAxis,
+                        yAxis
+                    })
+                }
+            ],
+
+            max_completion_tokens: 100
         });
+
+    const axisData = JSON.parse(
+        response.choices[0].message.content
+    );
+
+    // Preserve user-provided axes exactly.
+    if (!xAxis) {
+        xAxis = axisData.xAxis;
     }
-});
+
+    if (!yAxis) {
+        yAxis = axisData.yAxis;
+    }
+
+    return {
+        xAxis,
+        yAxis
+    };
+}
 
 app.post("/api/axis-map", async (req, res) => {
     try {
-        const text = req.body.text;
+        const text =
+            typeof req.body.text === "string"
+                ? req.body.text.trim()
+                : "";
+
+        if (!text) {
+            return res.status(400).json({
+                success: false,
+                error: "Enter at least one word."
+            });
+        }
+
+        const chosenAxes =
+            await chooseMissingAxes(
+                text,
+                req.body.xAxis,
+                req.body.yAxis
+            );
+
+        const xAxis = chosenAxes.xAxis;
+        const yAxis = chosenAxes.yAxis;
 
         const response =
             await client.chat.completions.create({
                 model: "gpt-5.4",
+
                 messages: [
                     {
                         role: "system",
-                        content:
-                            "Given a user's text, choose two meaningful conceptual axes for plotting the important words. Return only valid JSON in this format: {\"xAxis\":\"axis name\",\"yAxis\":\"axis name\",\"points\":[{\"word\":\"example\",\"x\":0.5,\"y\":-0.2}]}. Values must be between -1 and 1."
+                        content: `
+Place the important words from the user's text on the provided x-axis and y-axis.
+
+Rules:
+
+1. Use the provided axes exactly.
+2. Do not rename or replace either axis.
+3. Include each important word from the text.
+4. Assign every word an x coordinate and y coordinate.
+5. Every coordinate must be between -1 and 1.
+6. Return only valid JSON.
+
+Return this exact structure:
+
+{
+    "points": [
+        {
+            "word": "example",
+            "x": 0.5,
+            "y": -0.2
+        }
+    ]
+}
+`
                     },
                     {
                         role: "user",
-                        content: text
+                        content: JSON.stringify({
+                            text,
+                            xAxis,
+                            yAxis
+                        })
                     }
                 ],
+
                 max_completion_tokens: 300
             });
 
-        const axisMap = JSON.parse(
+        const positionData = JSON.parse(
             response.choices[0].message.content
         );
 
         res.json({
             success: true,
-            axisMap: axisMap
+
+            axisMap: {
+                xAxis,
+                yAxis,
+                points: positionData.points
+            }
         });
     }
 
@@ -296,7 +346,7 @@ app.post("/api/axis-map", async (req, res) => {
 
         res.status(500).json({
             success: false,
-            error: "Could not create axis map"
+            error: "Could not create ChatGPT axis map."
         });
     }
 });
@@ -386,13 +436,32 @@ function cosineSimilarity(a, b) {
 }
 
 app.post("/api/custom-axis-map", async (req, res) => {
-    const metric = req.body.metric || "cosine";
     try {
-        const text = req.body.text;
-        const xAxis = req.body.xAxis;
-        const yAxis = req.body.yAxis;
+        const text =
+            typeof req.body.text === "string"
+                ? req.body.text.trim()
+                : "";
 
-        const words = text.trim().split(/\s+/);
+        if (!text) {
+            return res.status(400).json({
+                success: false,
+                error: "Enter at least one word."
+            });
+        }
+
+        const words = text
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const chosenAxes =
+            await chooseMissingAxes(
+                text,
+                req.body.xAxis,
+                req.body.yAxis
+            );
+
+        const xAxis = chosenAxes.xAxis;
+        const yAxis = chosenAxes.yAxis;
 
         const inputs = [
             ...words,
@@ -400,39 +469,75 @@ app.post("/api/custom-axis-map", async (req, res) => {
             yAxis
         ];
 
-        const response = await client.embeddings.create({
-            model: "text-embedding-3-small",
-            input: inputs
-        });
+        const embeddingResponse =
+            await client.embeddings.create({
+                model: "text-embedding-3-small",
+                input: inputs
+            });
 
-        const wordEmbeddings = response.data
-            .slice(0, words.length);
+        const wordEmbeddings =
+            embeddingResponse.data.slice(
+                0,
+                words.length
+            );
 
         const xAxisEmbedding =
-            response.data[words.length].embedding;
+            embeddingResponse.data[
+                words.length
+            ].embedding;
 
         const yAxisEmbedding =
-            response.data[words.length + 1].embedding;
+            embeddingResponse.data[
+                words.length + 1
+            ].embedding;
 
-        const points = wordEmbeddings.map((item, index) => ({
-            word: words[index],
+        const rawPoints =
+            wordEmbeddings.map((item, index) => ({
+                word: words[index],
 
-            x: similarityFunction(
-                item.embedding,
-                xAxisEmbedding
-            ),
+                x: dotProduct(
+                    item.embedding,
+                    xAxisEmbedding
+                ),
 
-            y: similarityFunction(
-                item.embedding,
-                yAxisEmbedding
-            )
-        }));
+                y: dotProduct(
+                    item.embedding,
+                    yAxisEmbedding
+                )
+            }));
+
+        /*
+            Scale both dimensions into approximately
+            the range -1 to 1 for drawing.
+        */
+        const maxX =
+            Math.max(
+                0.0001,
+                ...rawPoints.map(point =>
+                    Math.abs(point.x)
+                )
+            );
+
+        const maxY =
+            Math.max(
+                0.0001,
+                ...rawPoints.map(point =>
+                    Math.abs(point.y)
+                )
+            );
+
+        const points =
+            rawPoints.map(point => ({
+                word: point.word,
+                x: point.x / maxX,
+                y: point.y / maxY
+            }));
 
         res.json({
             success: true,
-            xAxis: xAxis,
-            yAxis: yAxis,
-            points: points
+            xAxis,
+            yAxis,
+            points
         });
     }
 
@@ -441,7 +546,7 @@ app.post("/api/custom-axis-map", async (req, res) => {
 
         res.status(500).json({
             success: false,
-            error: "Could not create custom axis map"
+            error: "Could not create OpenAI embedding map."
         });
     }
 });
