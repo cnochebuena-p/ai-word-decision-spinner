@@ -15,7 +15,7 @@
 
 <body class="custom-axes-page">
     <header class="custom-axes-header">
-        <h2>Custom Embedding Axes</h2>
+        <h2>Custom Axes Embeddings</h2>
 
         <a href="index.html" class="nav-button">
             Back to Spinner
@@ -99,6 +99,31 @@
             </button>
 
             <p id="customAxisMessage"></p>
+
+            <section
+                id="guessActivity"
+                class="guess-activity"
+                hidden
+            >
+                <h3>Guess the Hidden Points</h3>
+
+                <p>
+                    Use the graph and axes to estimate where each new word belongs.
+                    Coordinates must be between -1 and 1.
+                </p>
+
+                <div id="guessWordContainer"></div>
+
+                <button
+                    type="button"
+                    id="checkGuessesButton"
+                    class="nav-button"
+                >
+                    Check Guesses
+                </button>
+
+                <p id="guessMessage"></p>
+            </section>
         </section>
     </main>
 

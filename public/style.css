@@ -573,3 +573,48 @@ a {
         max-width: 100%;
     }
 }
+
+.guess-activity {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #cccccc;
+}
+
+#guessWordContainer {
+    display: grid;
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.guess-word-card {
+    display: grid;
+    grid-template-columns:
+        minmax(100px, 1fr)
+        minmax(80px, 120px);
+    gap: 8px 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+}
+
+.guess-word-card h4 {
+    grid-column: 1 / -1;
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+}
+
+.guess-word-card input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.guess-result {
+    grid-column: 1 / -1;
+    margin: 6px 0 0;
+    line-height: 1.5;
+}
+
+#guessMessage {
+    font-weight: bold;
+}

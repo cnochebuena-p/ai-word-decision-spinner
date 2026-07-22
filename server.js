@@ -257,6 +257,133 @@ Return this exact structure:
     };
 }
 
+async function chooseGuessWords(
+    text,
+    xAxis,
+    yAxis
+) {
+    const originalWords =
+        text
+            .split(/\s+/)
+            .map(word =>
+                word
+                    .trim()
+                    .toLowerCase()
+                    .replace(
+                        /^[^a-z0-9]+|[^a-z0-9]+$/gi,
+                        ""
+                    )
+            )
+            .filter(Boolean);
+
+    const response =
+        await client.chat.completions.create({
+            model: "gpt-5.4",
+
+            messages: [
+                {
+                    role: "system",
+                    content: `
+Choose exactly two new single words for a semantic-coordinate guessing activity.
+
+The words should relate meaningfully to:
+- the user's original words,
+- the x-axis concept,
+- and the y-axis concept.
+
+Rules:
+
+1. Return exactly two words.
+2. Each result must be a single word.
+3. Do not return any word already supplied by the user.
+4. Do not return the x-axis or y-axis names themselves.
+5. The two words should be meaningfully different from one another.
+6. Prefer words whose likely coordinates are not identical.
+7. Return only valid JSON.
+
+Return this exact structure:
+
+{
+    "words": [
+        "example1",
+        "example2"
+    ]
+}
+`
+                },
+                {
+                    role: "user",
+                    content: JSON.stringify({
+                        originalWords,
+                        xAxis,
+                        yAxis
+                    })
+                }
+            ],
+
+            max_completion_tokens: 100
+        });
+
+    const result =
+        JSON.parse(
+            response.choices[0].message.content
+        );
+
+    if (!Array.isArray(result.words)) {
+        throw new Error(
+            "The model did not return a words array."
+        );
+    }
+
+    const originalWordSet =
+        new Set(originalWords);
+
+    const axisNames =
+        new Set([
+            xAxis.trim().toLowerCase(),
+            yAxis.trim().toLowerCase()
+        ]);
+
+    const guessWords =
+        result.words
+            .map(word =>
+                String(word)
+                    .trim()
+                    .toLowerCase()
+            )
+            .filter(word =>
+                word &&
+                !word.includes(" ") &&
+                !originalWordSet.has(word) &&
+                !axisNames.has(word)
+            );
+
+    const uniqueGuessWords =
+        [...new Set(guessWords)];
+
+    if (uniqueGuessWords.length < 2) {
+        throw new Error(
+            "Could not generate two unique guess words."
+        );
+    }
+
+    return uniqueGuessWords.slice(0, 2);
+}
+
+function clampCoordinate(value) {
+    const number =
+        Number(value);
+
+    if (!Number.isFinite(number)) {
+        return 0;
+    }
+
+    return Math.max(
+        -1,
+        Math.min(1, number)
+    );
+}
+
 app.post("/api/axis-map", async (req, res) => {
     try {
         const text =
@@ -271,6 +398,11 @@ app.post("/api/axis-map", async (req, res) => {
             });
         }
 
+        const originalWords =
+            text
+                .split(/\s+/)
+                .filter(Boolean);
+
         const chosenAxes =
             await chooseMissingAxes(
                 text,
@@ -278,8 +410,18 @@ app.post("/api/axis-map", async (req, res) => {
                 req.body.yAxis
             );
 
-        const xAxis = chosenAxes.xAxis;
-        const yAxis = chosenAxes.yAxis;
+        const xAxis =
+            chosenAxes.xAxis;
+
+        const yAxis =
+            chosenAxes.yAxis;
+
+        const guessWords =
+            await chooseGuessWords(
+                text,
+                xAxis,
+                yAxis
+            );
 
         const response =
             await client.chat.completions.create({
@@ -289,16 +431,26 @@ app.post("/api/axis-map", async (req, res) => {
                     {
                         role: "system",
                         content: `
-Place the important words from the user's text on the provided x-axis and y-axis.
+Place all supplied words on the provided semantic x-axis and y-axis.
+
+There are two groups:
+
+1. originalWords:
+   These will be displayed immediately.
+
+2. guessWords:
+   These coordinates will be hidden until the user submits a guess.
 
 Rules:
 
 1. Use the provided axes exactly.
 2. Do not rename or replace either axis.
-3. Include each important word from the text.
-4. Assign every word an x coordinate and y coordinate.
-5. Every coordinate must be between -1 and 1.
-6. Return only valid JSON.
+3. Include every original word.
+4. Include every guess word.
+5. Assign each word an x coordinate and y coordinate.
+6. Every coordinate must be between -1 and 1.
+7. Make positions meaningfully reflect both axes.
+8. Return only valid JSON.
 
 Return this exact structure:
 
@@ -309,6 +461,13 @@ Return this exact structure:
             "x": 0.5,
             "y": -0.2
         }
+    ],
+    "guessWords": [
+        {
+            "word": "hidden-example",
+            "x": 0.4,
+            "y": 0.7
+        }
     ]
 }
 `
@@ -316,19 +475,48 @@ Return this exact structure:
                     {
                         role: "user",
                         content: JSON.stringify({
-                            text,
+                            originalWords,
+                            guessWords,
                             xAxis,
                             yAxis
                         })
                     }
                 ],
 
-                max_completion_tokens: 300
+                max_completion_tokens: 500
             });
 
-        const positionData = JSON.parse(
-            response.choices[0].message.content
-        );
+        const positionData =
+            JSON.parse(
+                response.choices[0].message.content
+            );
+
+        if (
+            !Array.isArray(positionData.points) ||
+            !Array.isArray(
+                positionData.guessWords
+            )
+        ) {
+            throw new Error(
+                "ChatGPT returned invalid position data."
+            );
+        }
+
+        const points =
+            positionData.points.map(point => ({
+                word: String(point.word),
+                x: clampCoordinate(point.x),
+                y: clampCoordinate(point.y)
+            }));
+
+        const hiddenPoints =
+            positionData.guessWords.map(
+                point => ({
+                    word: String(point.word),
+                    x: clampCoordinate(point.x),
+                    y: clampCoordinate(point.y)
+                })
+            );
 
         res.json({
             success: true,
@@ -336,7 +524,8 @@ Return this exact structure:
             axisMap: {
                 xAxis,
                 yAxis,
-                points: positionData.points
+                points,
+                guessWords: hiddenPoints
             }
         });
     }
@@ -346,7 +535,8 @@ Return this exact structure:
 
         res.status(500).json({
             success: false,
-            error: "Could not create ChatGPT axis map."
+            error:
+                "Could not create ChatGPT axis map."
         });
     }
 });
@@ -435,121 +625,169 @@ function cosineSimilarity(a, b) {
     );
 }
 
-app.post("/api/custom-axis-map", async (req, res) => {
-    try {
-        const text =
-            typeof req.body.text === "string"
-                ? req.body.text.trim()
-                : "";
+app.post(
+    "/api/custom-axis-map",
+    async (req, res) => {
+        try {
+            const text =
+                typeof req.body.text === "string"
+                    ? req.body.text.trim()
+                    : "";
 
-        if (!text) {
-            return res.status(400).json({
-                success: false,
-                error: "Enter at least one word."
+            if (!text) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        "Enter at least one word."
+                });
+            }
+
+            const words =
+                text
+                    .split(/\s+/)
+                    .filter(Boolean);
+
+            const chosenAxes =
+                await chooseMissingAxes(
+                    text,
+                    req.body.xAxis,
+                    req.body.yAxis
+                );
+
+            const xAxis =
+                chosenAxes.xAxis;
+
+            const yAxis =
+                chosenAxes.yAxis;
+
+            const guessWordNames =
+                await chooseGuessWords(
+                    text,
+                    xAxis,
+                    yAxis
+                );
+
+            /*
+                Embed:
+                - original words
+                - hidden words
+                - x axis
+                - y axis
+            */
+            const allWords = [
+                ...words,
+                ...guessWordNames
+            ];
+
+            const inputs = [
+                ...allWords,
+                xAxis,
+                yAxis
+            ];
+
+            const embeddingResponse =
+                await client.embeddings.create({
+                    model:
+                        "text-embedding-3-small",
+
+                    input: inputs
+                });
+
+            const allWordEmbeddings =
+                embeddingResponse.data.slice(
+                    0,
+                    allWords.length
+                );
+
+            const xAxisEmbedding =
+                embeddingResponse.data[
+                    allWords.length
+                ].embedding;
+
+            const yAxisEmbedding =
+                embeddingResponse.data[
+                    allWords.length + 1
+                ].embedding;
+
+            const rawAllPoints =
+                allWordEmbeddings.map(
+                    (item, index) => ({
+                        word: allWords[index],
+
+                        x: dotProduct(
+                            item.embedding,
+                            xAxisEmbedding
+                        ),
+
+                        y: dotProduct(
+                            item.embedding,
+                            yAxisEmbedding
+                        )
+                    })
+                );
+
+            /*
+                Use a shared scaling system for both
+                visible and hidden words.
+
+                This is important because user guesses
+                must use the same -1 to 1 coordinate
+                system as the hidden answers.
+            */
+            const maxX =
+                Math.max(
+                    0.0001,
+                    ...rawAllPoints.map(point =>
+                        Math.abs(point.x)
+                    )
+                );
+
+            const maxY =
+                Math.max(
+                    0.0001,
+                    ...rawAllPoints.map(point =>
+                        Math.abs(point.y)
+                    )
+                );
+
+            const scaledAllPoints =
+                rawAllPoints.map(point => ({
+                    word: point.word,
+                    x: point.x / maxX,
+                    y: point.y / maxY
+                }));
+
+            const points =
+                scaledAllPoints.slice(
+                    0,
+                    words.length
+                );
+
+            const guessWords =
+                scaledAllPoints.slice(
+                    words.length
+                );
+
+            res.json({
+                success: true,
+                xAxis,
+                yAxis,
+                points,
+                guessWords
             });
         }
 
-        const words = text
-            .split(/\s+/)
-            .filter(Boolean);
+        catch (error) {
+            console.error(error);
 
-        const chosenAxes =
-            await chooseMissingAxes(
-                text,
-                req.body.xAxis,
-                req.body.yAxis
-            );
-
-        const xAxis = chosenAxes.xAxis;
-        const yAxis = chosenAxes.yAxis;
-
-        const inputs = [
-            ...words,
-            xAxis,
-            yAxis
-        ];
-
-        const embeddingResponse =
-            await client.embeddings.create({
-                model: "text-embedding-3-small",
-                input: inputs
+            res.status(500).json({
+                success: false,
+                error:
+                    "Could not create OpenAI embedding map."
             });
-
-        const wordEmbeddings =
-            embeddingResponse.data.slice(
-                0,
-                words.length
-            );
-
-        const xAxisEmbedding =
-            embeddingResponse.data[
-                words.length
-            ].embedding;
-
-        const yAxisEmbedding =
-            embeddingResponse.data[
-                words.length + 1
-            ].embedding;
-
-        const rawPoints =
-            wordEmbeddings.map((item, index) => ({
-                word: words[index],
-
-                x: dotProduct(
-                    item.embedding,
-                    xAxisEmbedding
-                ),
-
-                y: dotProduct(
-                    item.embedding,
-                    yAxisEmbedding
-                )
-            }));
-
-        /*
-            Scale both dimensions into approximately
-            the range -1 to 1 for drawing.
-        */
-        const maxX =
-            Math.max(
-                0.0001,
-                ...rawPoints.map(point =>
-                    Math.abs(point.x)
-                )
-            );
-
-        const maxY =
-            Math.max(
-                0.0001,
-                ...rawPoints.map(point =>
-                    Math.abs(point.y)
-                )
-            );
-
-        const points =
-            rawPoints.map(point => ({
-                word: point.word,
-                x: point.x / maxX,
-                y: point.y / maxY
-            }));
-
-        res.json({
-            success: true,
-            xAxis,
-            yAxis,
-            points
-        });
+        }
     }
-
-    catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            success: false,
-            error: "Could not create OpenAI embedding map."
-        });
-    }
-});
+);
 
 app.post("/api/embedding-concept-graph", async (req, res) => {
     try {
