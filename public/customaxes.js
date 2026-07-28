@@ -13,6 +13,20 @@ const guessWordContainer =
 const guessMessage =
     document.getElementById("guessMessage");
 
+const toggleGuessPointsButton =
+    document.getElementById(
+        "toggleGuessPointsButton"
+    );
+
+const customAxisCanvas =
+    document.getElementById(
+        "customAxisCanvas"
+    );
+
+let draggedGuessPoint = null;
+let activePointerId = null;
+let guessPointsVisible = true;
+
 /*
     Stores the current graph and hidden-word information.
 */
@@ -29,6 +43,11 @@ customAxisButton.addEventListener(
 checkGuessesButton.addEventListener(
     "click",
     checkGuesses
+);
+
+toggleGuessPointsButton.addEventListener(
+    "click",
+    toggleGuessPoints
 );
 
 async function createCustomAxisMap() {
@@ -154,12 +173,43 @@ async function createCustomAxisMap() {
         }
 
         currentMapData = mapData;
-        currentGuessWords = mapData.guessWords;
-        currentGuesses = [];
+
+        /*
+            currentGuessWords contains the hidden,
+            correct positions returned by the server.
+        */
+        currentGuessWords =
+            mapData.guessWords;
+
+        /*
+            currentGuesses contains the user's draggable
+            positions.
+
+            The first word starts left of center and the
+            second word starts right of center.
+        */
+        currentGuesses =
+            currentGuessWords.map(
+                (point, index) => ({
+                    word: point.word,
+
+                    x:
+                        index === 0
+                            ? -0.25
+                            : 0.25,
+
+                    y: 0
+                })
+            );
+
         guessesRevealed = false;
+        guessPointsVisible = true;
+
+        toggleGuessPointsButton.textContent =
+            "Hide Guess Points";
 
         drawCustomAxisMap(currentMapData);
-        buildGuessInputs(currentGuessWords);
+        buildGuessDisplay();
 
         guessActivity.hidden = false;
 
@@ -180,88 +230,96 @@ function resetGuessActivity() {
     currentMapData = null;
     currentGuessWords = [];
     currentGuesses = [];
+
     guessesRevealed = false;
+    guessPointsVisible = true;
+
+    draggedGuessPoint = null;
+    activePointerId = null;
 
     guessActivity.hidden = true;
     guessWordContainer.innerHTML = "";
     guessMessage.textContent = "";
+
+    toggleGuessPointsButton.textContent =
+        "Hide Guess Points";
 }
 
-function buildGuessInputs(guessWords) {
+function buildGuessDisplay() {
     guessWordContainer.innerHTML = "";
 
-    guessWords.forEach((item, index) => {
-        const card =
-            document.createElement("div");
+    currentGuesses.forEach(
+        (point, index) => {
+            const card =
+                document.createElement("div");
 
-        card.className = "guess-word-card";
+            card.className =
+                "guess-word-card";
 
-        const heading =
-            document.createElement("h4");
+            const heading =
+                document.createElement("h4");
 
-        heading.textContent = item.word;
+            heading.textContent =
+                point.word;
 
-        const xLabel =
-            document.createElement("label");
+            const coordinateDisplay =
+                document.createElement("p");
 
-        xLabel.setAttribute(
-            "for",
-            `guessX${index}`
-        );
+            coordinateDisplay.id =
+                `guessCoordinate${index}`;
 
-        xLabel.textContent = "X coordinate:";
+            coordinateDisplay.className =
+                "guess-coordinate";
 
-        const xInput =
-            document.createElement("input");
+            const result =
+                document.createElement("p");
 
-        xInput.type = "number";
-        xInput.id = `guessX${index}`;
-        xInput.min = "-1";
-        xInput.max = "1";
-        xInput.step = "0.01";
-        xInput.placeholder = "-1 to 1";
+            result.id =
+                `guessResult${index}`;
 
-        const yLabel =
-            document.createElement("label");
+            result.className =
+                "guess-result";
 
-        yLabel.setAttribute(
-            "for",
-            `guessY${index}`
-        );
+            card.appendChild(heading);
+            card.appendChild(
+                coordinateDisplay
+            );
+            card.appendChild(result);
 
-        yLabel.textContent = "Y coordinate:";
+            guessWordContainer.appendChild(
+                card
+            );
+        }
+    );
 
-        const yInput =
-            document.createElement("input");
+    updateGuessCoordinateDisplays();
+}
 
-        yInput.type = "number";
-        yInput.id = `guessY${index}`;
-        yInput.min = "-1";
-        yInput.max = "1";
-        yInput.step = "0.01";
-        yInput.placeholder = "-1 to 1";
+function updateGuessCoordinateDisplays() {
+    currentGuesses.forEach(
+        (point, index) => {
+            const display =
+                document.getElementById(
+                    `guessCoordinate${index}`
+                );
 
-        const result =
-            document.createElement("p");
+            if (!display) {
+                return;
+            }
 
-        result.id = `guessResult${index}`;
-        result.className = "guess-result";
-
-        card.appendChild(heading);
-        card.appendChild(xLabel);
-        card.appendChild(xInput);
-        card.appendChild(yLabel);
-        card.appendChild(yInput);
-        card.appendChild(result);
-
-        guessWordContainer.appendChild(card);
-    });
+            display.textContent =
+                `Current guess: ` +
+                `(${point.x.toFixed(2)}, ` +
+                `${point.y.toFixed(2)})`;
+        }
+    );
 }
 
 function checkGuesses() {
     if (
         !currentMapData ||
-        currentGuessWords.length === 0
+        currentGuessWords.length === 0 ||
+        currentGuesses.length === 0
     ) {
         guessMessage.textContent =
             "Create a graph first.";
@@ -269,61 +327,6 @@ function checkGuesses() {
         return;
     }
 
-    const guesses = [];
-
-    for (
-        let index = 0;
-        index < currentGuessWords.length;
-        index++
-    ) {
-        const xInput =
-            document.getElementById(
-                `guessX${index}`
-            );
-
-        const yInput =
-            document.getElementById(
-                `guessY${index}`
-            );
-
-        const guessedX =
-            Number(xInput.value);
-
-        const guessedY =
-            Number(yInput.value);
-
-        if (
-            xInput.value === "" ||
-            yInput.value === "" ||
-            Number.isNaN(guessedX) ||
-            Number.isNaN(guessedY)
-        ) {
-            guessMessage.textContent =
-                "Enter both coordinates for every word.";
-
-            return;
-        }
-
-        if (
-            guessedX < -1 ||
-            guessedX > 1 ||
-            guessedY < -1 ||
-            guessedY > 1
-        ) {
-            guessMessage.textContent =
-                "Every coordinate must be between -1 and 1.";
-
-            return;
-        }
-
-        guesses.push({
-            word: currentGuessWords[index].word,
-            x: guessedX,
-            y: guessedY
-        });
-    }
-
-    currentGuesses = guesses;
     guessesRevealed = true;
 
     let totalScore = 0;
@@ -362,7 +365,8 @@ function checkGuesses() {
         currentGuessWords.length;
 
     guessMessage.textContent =
-        `Average score: ${averageScore.toFixed(1)}%`;
+        `Average score: ` +
+        `${averageScore.toFixed(1)}%`;
 
     drawCustomAxisMap(currentMapData);
 }
@@ -544,8 +548,32 @@ function drawCustomAxisMap(data) {
     });
 
     /*
-        Do not reveal hidden points until the
-        user checks the guesses.
+        Draw the user's draggable guess points.
+
+        These are not the real hidden positions.
+    */
+    if (
+        guessPointsVisible &&
+        currentGuesses.length > 0
+    ) {
+        currentGuesses.forEach(
+            guessedPoint => {
+                drawPoint(
+                    ctx,
+                    guessedPoint,
+                    centerX,
+                    centerY,
+                    margin,
+                    canvas,
+                    "guess"
+                );
+            }
+        );
+    }
+
+    /*
+        Reveal the correct points and connecting
+        lines after the user checks the guesses.
     */
     if (
         guessesRevealed &&
@@ -556,25 +584,17 @@ function drawCustomAxisMap(data) {
                 const guessedPoint =
                     currentGuesses[index];
 
-                drawConnectionLine(
-                    ctx,
-                    guessedPoint,
-                    actualPoint,
-                    centerX,
-                    centerY,
-                    margin,
-                    canvas
-                );
-
-                drawPoint(
-                    ctx,
-                    guessedPoint,
-                    centerX,
-                    centerY,
-                    margin,
-                    canvas,
-                    "guess"
-                );
+                if (guessPointsVisible) {
+                    drawConnectionLine(
+                        ctx,
+                        guessedPoint,
+                        actualPoint,
+                        centerX,
+                        centerY,
+                        margin,
+                        canvas
+                    );
+                }
 
                 drawPoint(
                     ctx,
@@ -588,6 +608,25 @@ function drawCustomAxisMap(data) {
             }
         );
     }
+}
+
+function toggleGuessPoints() {
+    if (!currentMapData) {
+        guessMessage.textContent =
+            "Create a graph first.";
+
+        return;
+    }
+
+    guessPointsVisible =
+        !guessPointsVisible;
+
+    toggleGuessPointsButton.textContent =
+        guessPointsVisible
+            ? "Hide Guess Points"
+            : "Show Guess Points";
+
+    drawCustomAxisMap(currentMapData);
 }
 
 function coordinateToCanvas(
@@ -636,42 +675,33 @@ function drawPoint(
 
     if (pointType === "guess") {
         /*
-            Draw guessed positions as an X.
+            Draw draggable guess points as
+            orange circles.
         */
-        ctx.strokeStyle = "gray";
-        ctx.lineWidth = 3;
-
         ctx.beginPath();
 
-        ctx.moveTo(
-            canvasPoint.x - 7,
-            canvasPoint.y - 7
+        ctx.arc(
+            canvasPoint.x,
+            canvasPoint.y,
+            10,
+            0,
+            Math.PI * 2
         );
 
-        ctx.lineTo(
-            canvasPoint.x + 7,
-            canvasPoint.y + 7
-        );
+        ctx.fillStyle = "orange";
+        ctx.fill();
 
-        ctx.moveTo(
-            canvasPoint.x + 7,
-            canvasPoint.y - 7
-        );
-
-        ctx.lineTo(
-            canvasPoint.x - 7,
-            canvasPoint.y + 7
-        );
-
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.fillStyle = "gray";
-        ctx.font = "14px Arial";
+        ctx.fillStyle = "darkorange";
+        ctx.font = "bold 15px Arial";
 
         ctx.fillText(
             `${point.word} guess`,
-            canvasPoint.x + 10,
-            canvasPoint.y + 18
+            canvasPoint.x + 13,
+            canvasPoint.y - 12
         );
     }
 
@@ -758,4 +788,256 @@ function drawConnectionLine(
     ctx.stroke();
 
     ctx.restore();
+}
+
+customAxisCanvas.addEventListener(
+    "pointerdown",
+    event => {
+        if (
+            !guessPointsVisible ||
+            guessesRevealed
+        ) {
+            return;
+        }
+
+        const mouse =
+            getCustomCanvasMousePosition(
+                event
+            );
+
+        draggedGuessPoint =
+            currentGuesses.find(point => {
+                const canvasPoint =
+                    customGraphToCanvas(
+                        point.x,
+                        point.y
+                    );
+
+                const dx =
+                    mouse.x -
+                    canvasPoint.x;
+
+                const dy =
+                    mouse.y -
+                    canvasPoint.y;
+
+                return (
+                    Math.sqrt(
+                        dx * dx + dy * dy
+                    ) <= 18
+                );
+            });
+
+        if (!draggedGuessPoint) {
+            return;
+        }
+
+        activePointerId =
+            event.pointerId;
+
+        customAxisCanvas.setPointerCapture(
+            event.pointerId
+        );
+
+        customAxisCanvas.style.cursor =
+            "grabbing";
+    }
+);
+
+customAxisCanvas.addEventListener(
+    "pointermove",
+    event => {
+        const mouse =
+            getCustomCanvasMousePosition(
+                event
+            );
+
+        if (!draggedGuessPoint) {
+            const hoveringPoint =
+                guessPointsVisible &&
+                !guessesRevealed &&
+                currentGuesses.some(
+                    point => {
+                        const canvasPoint =
+                            customGraphToCanvas(
+                                point.x,
+                                point.y
+                            );
+
+                        const dx =
+                            mouse.x -
+                            canvasPoint.x;
+
+                        const dy =
+                            mouse.y -
+                            canvasPoint.y;
+
+                        return (
+                            Math.sqrt(
+                                dx * dx +
+                                dy * dy
+                            ) <= 18
+                        );
+                    }
+                );
+
+            customAxisCanvas.style.cursor =
+                hoveringPoint
+                    ? "grab"
+                    : "default";
+
+            return;
+        }
+
+        const graphPoint =
+            customCanvasToGraph(
+                mouse.x,
+                mouse.y
+            );
+
+        draggedGuessPoint.x =
+            graphPoint.x;
+
+        draggedGuessPoint.y =
+            graphPoint.y;
+
+        updateGuessCoordinateDisplays();
+        drawCustomAxisMap(currentMapData);
+    }
+);
+
+function finishCustomGuessDragging() {
+    if (
+        activePointerId !== null &&
+        customAxisCanvas.hasPointerCapture(
+            activePointerId
+        )
+    ) {
+        customAxisCanvas.releasePointerCapture(
+            activePointerId
+        );
+    }
+
+    draggedGuessPoint = null;
+    activePointerId = null;
+
+    customAxisCanvas.style.cursor =
+        "default";
+}
+
+customAxisCanvas.addEventListener(
+    "pointerup",
+    finishCustomGuessDragging
+);
+
+customAxisCanvas.addEventListener(
+    "pointercancel",
+    finishCustomGuessDragging
+);
+
+function customGraphToCanvas(
+    xValue,
+    yValue
+) {
+    const margin = 70;
+
+    const centerX =
+        customAxisCanvas.width / 2;
+
+    const centerY =
+        customAxisCanvas.height / 2;
+
+    const drawableHalfWidth =
+        customAxisCanvas.width / 2 -
+        margin;
+
+    const drawableHalfHeight =
+        customAxisCanvas.height / 2 -
+        margin;
+
+    return {
+        x:
+            centerX +
+            xValue *
+            drawableHalfWidth,
+
+        y:
+            centerY -
+            yValue *
+            drawableHalfHeight
+    };
+}
+
+function customCanvasToGraph(
+    canvasX,
+    canvasY
+) {
+    const margin = 70;
+
+    const centerX =
+        customAxisCanvas.width / 2;
+
+    const centerY =
+        customAxisCanvas.height / 2;
+
+    const drawableHalfWidth =
+        customAxisCanvas.width / 2 -
+        margin;
+
+    const drawableHalfHeight =
+        customAxisCanvas.height / 2 -
+        margin;
+
+    let x =
+        (canvasX - centerX) /
+        drawableHalfWidth;
+
+    let y =
+        (centerY - canvasY) /
+        drawableHalfHeight;
+
+    x = Math.max(
+        -1,
+        Math.min(1, x)
+    );
+
+    y = Math.max(
+        -1,
+        Math.min(1, y)
+    );
+
+    return {
+        x,
+        y
+    };
+}
+
+function getCustomCanvasMousePosition(
+    event
+) {
+    const rect =
+        customAxisCanvas
+            .getBoundingClientRect();
+
+    const scaleX =
+        customAxisCanvas.width /
+        rect.width;
+
+    const scaleY =
+        customAxisCanvas.height /
+        rect.height;
+
+    return {
+        x:
+            (
+                event.clientX -
+                rect.left
+            ) * scaleX,
+
+        y:
+            (
+                event.clientY -
+                rect.top
+            ) * scaleY
+    };
 }
